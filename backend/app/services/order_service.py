@@ -12,6 +12,7 @@ from ..models.product import Product
 from ..schemas.order import OrderCreate, OrderUpdate, OrderSchema, OrderItemSchema, RefundCreate, RefundSchema
 from .address_service import AddressService
 from .cart_service import CartService
+from .inventory_service import inventory_service
 
 
 class OrderService:
@@ -86,6 +87,20 @@ class OrderService:
             cart_item.is_deleted = True
 
         await self.db.flush()  # flush without commit to get order.id
+
+        # 扣减 SKU 库存
+        from .inventory_service import inventory_service
+        for item in order.items:
+            sku_id = item.sku_id if item.sku_id else None
+            if sku_id is None:
+                # 没有 SKU，降级到产品级扣减（已在上方直接处理 product.stock）
+                continue
+            deduct_result = await inventory_service.deduct_stock_for_order(
+                self.db, sku_id, item.quantity, order.id
+            )
+            if not deduct_result["success"]:
+                await self.db.rollback()
+                raise ValueError(f"SKU {sku_id} 库存不足：{deduct_result['error']}")
 
         # Eager load items before returning
         result = await self.db.execute(
@@ -188,6 +203,15 @@ class OrderService:
             if product:
                 product.stock += item.quantity
                 product.sales -= item.quantity
+            # 恢复 SKU 库存
+            sku_id = item.sku_id if item.sku_id else None
+            if sku_id is not None:
+                inv_result = await self.db.execute(
+                    select(ProductSku).where(ProductSku.id == sku_id)
+                )
+                sku = inv_result.scalar_one_or_none()
+                if sku:
+                    sku.stock = (sku.stock or 0) + item.quantity
 
         order.status = OrderStatus.CANCELED
         order.cancel_time = datetime.now()
@@ -246,3 +270,22 @@ class OrderService:
         
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
+
+    async def add_status_log(
+        self, db: AsyncSession, order_id: int, new_status: str,
+        old_status: Optional[str] = None, operator_type: str = "system",
+        operator_id: Optional[int] = None, remark: Optional[str] = None
+    ):
+        from ..models.order_status_log import OrderStatusLog
+        log = OrderStatusLog(
+            order_id=order_id,
+            old_status=old_status,
+            new_status=new_status,
+            operator_type=operator_type,
+            operator_id=operator_id,
+            remark=remark
+        )
+        db.add(log)
+        await db.commit()
+        await db.refresh(log)
+        return log

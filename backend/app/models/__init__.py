@@ -8,8 +8,16 @@ from .product_spu import ProductSpu
 from .product_sku import ProductSku
 from .product_image import ProductImage
 from .inventory_record import InventoryRecord
+from .address import Address
 from .cart import CartItem
 from .order import Order, OrderItem
+from .favorite import Favorite
+from .browse_history import BrowseHistory
+from .order_status_log import OrderStatusLog
+from .recommend import AdSpace, Ad, Floor, FloorProduct
+from .coupon import Coupon
+from .user_coupon import UserCoupon
+from .shipping_rule import ShippingRule
 
 # Backward-compatible alias for services still importing Category.
 Category = ProductCategory
@@ -30,4 +38,14 @@ __all__ = [
     "CartItem",
     "Order",
     "OrderItem",
+    "Favorite",
+    "BrowseHistory",
+    "OrderStatusLog",
+    "AdSpace",
+    "Ad",
+    "Floor",
+    "FloorProduct",
+    "Coupon",
+    "UserCoupon",
+    "ShippingRule",
 ]

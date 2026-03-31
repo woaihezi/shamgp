@@ -107,5 +107,11 @@ class ProductSpuService(BaseService[ProductSpu, ProductSpuCreate, ProductSpuUpda
             await db.refresh(spu)
         return spu
 
+    async def get_multi_by_ids(self, db: AsyncSession, ids: List[int]) -> List[ProductSpu]:
+        if not ids:
+            return []
+        result = await db.execute(select(ProductSpu).where(ProductSpu.id.in_(ids)))
+        return list(result.scalars().all())
+
 
 product_spu_service = ProductSpuService()

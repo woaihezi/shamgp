@@ -117,6 +117,45 @@ class FloorService(BaseService[Floor]):
         result = await db.execute(select(Floor).where(Floor.code == code))
         return result.scalar_one_or_none()
 
+    async def get_floor_product_map(self, db: AsyncSession) -> dict[int, List[dict]]:
+        """
+        获取所有启用楼层ID对应的商品ID列表
+        返回 { floor_id: [{product_id: int, sort: int}, ...] }
+        """
+        from app.models.product import Product
+        floors = await self.get_active_floors(db)
+        floor_ids = [f.id for f in floors]
+        if not floor_ids:
+            return {}
+
+        # 批量查询楼层商品关联
+        fp_query = select(FloorProduct).where(FloorProduct.floor_id.in_(floor_ids)).order_by(FloorProduct.sort)
+        fp_result = await db.execute(fp_query)
+        floor_products = list(fp_result.scalars().all())
+
+        # 提取所有product_id
+        prod_ids = list(set(fp.product_id for fp in floor_products))
+        if not prod_ids:
+            return {fid: [] for fid in floor_ids}
+
+        # 批量查询商品基本信息
+        prod_query = select(Product.id, Product.cover_image, Product.price, Product.original_price, Product.name).where(Product.id.in_(prod_ids))
+        prod_result = await db.execute(prod_query)
+        prod_map = {row[0]: {"cover_image": row[1], "price": float(row[2]) if row[2] else 0, "original_price": float(row[3]) if row[3] else None, "name": row[4]} for row in prod_result.fetchall()}
+
+        # 组装
+        result: dict[int, List[dict]] = {fid: [] for fid in floor_ids}
+        for fp in floor_products:
+            prod_info = prod_map.get(fp.product_id)
+            if prod_info:
+                result[fp.floor_id].append({
+                    "product_id": fp.product_id,
+                    "sort": fp.sort,
+                    **prod_info
+                })
+
+        return result
+
 
 class FloorProductService(BaseService[FloorProduct]):
     def __init__(self):

@@ -15,6 +15,7 @@ class ProductSku(Base, TimestampMixin):
     price = Column(Numeric(10, 2), nullable=False, comment="价格")
     original_price = Column(Numeric(10, 2), nullable=True, comment="原价")
     cost_price = Column(Numeric(10, 2), nullable=True, comment="成本价")
+    stock = Column(Integer, nullable=False, default=0, comment="库存数量")
     status = Column(Integer, default=1, comment="状态: 0-禁用, 1-启用")
     sort = Column(Integer, default=0, comment="排序")
 
