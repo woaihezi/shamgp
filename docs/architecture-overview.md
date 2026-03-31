@@ -3,7 +3,9 @@
 ## 1. 项目概述
 
 ### 1.1 项目目标
+
 构建一个可扩展的电商业务平台，同时支持：
+
 - 电商前台（用户端）
 - 电商后台（管理端）
 - 通用管理模块（用户、角色、菜单、日志、配置、文件、报表等）
@@ -13,10 +15,12 @@
 ### 1.2 技术栈
 
 #### 前端技术栈
+
 - **前端后台**: Vue 3 + Vite + TypeScript + Element Plus + ECharts + Pinia + Vue Router + Axios
 - **前端商城**: Vue 3 + Vite + TypeScript
 
 #### 后端技术栈
+
 - **框架**: FastAPI
 - **ORM**: SQLAlchemy 2.0 (异步)
 - **数据验证**: Pydantic v2
@@ -24,6 +28,7 @@
 - **数据库**: PostgreSQL (主) / MySQL (兼容)
 
 #### 部署
+
 - Docker / Docker Compose
 
 ## 2. 系统架构
@@ -67,6 +72,7 @@
 ### 2.2 核心设计原则
 
 #### 2.2.1 分层架构
+
 系统采用经典的分层架构设计：
 
 ```
@@ -82,11 +88,13 @@
 ```
 
 #### 2.2.2 模块化设计
+
 - 核心模块独立，低耦合高内聚
 - 清晰的模块边界，便于并行开发
 - 通用模块可复用于其他业务系统
 
 #### 2.2.3 前后端分离
+
 - RESTful API 设计
 - 统一的数据响应格式
 - JWT 无状态认证
@@ -366,7 +374,7 @@ frontend-shop/
 ### 4.1 Docker Compose 部署
 
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
   postgres:
     image: postgres:15-alpine
@@ -431,18 +439,20 @@ volumes:
 
 ### 5.1 预留扩展点
 
-| 扩展功能 | 预留位置 | 说明 |
-|---------|---------|------|
-| AI 助手 | backend/app/api/v1/ai/, frontend-admin/src/views/ai/ | 可插拔的 AI 模块 |
-| Excel 导入导出 | backend/app/utils/excel.py, frontend-admin/src/components/Excel/ | 独立工具模块 |
-| 可视化大屏 | frontend-admin/src/views/dashboard/big-screen/ | 大屏展示模块 |
-| 工作流 | backend/app/services/workflow/, frontend-admin/src/views/workflow/ | 工作流引擎模块 |
-| CRM | backend/app/api/v1/crm/, frontend-admin/src/views/crm/ | CRM 业务模块 |
-| OA | backend/app/api/v1/oa/, frontend-admin/src/views/oa/ | OA 业务模块 |
-| 工单 | backend/app/api/v1/ticket/, frontend-admin/src/views/ticket/ | 工单系统模块 |
+| 扩展功能       | 预留位置                                                           | 说明             |
+| -------------- | ------------------------------------------------------------------ | ---------------- |
+| AI 助手        | backend/app/api/v1/ai/, frontend-admin/src/views/ai/               | 可插拔的 AI 模块 |
+| Excel 导入导出 | backend/app/utils/excel.py, frontend-admin/src/components/Excel/   | 独立工具模块     |
+| 可视化大屏     | frontend-admin/src/views/dashboard/big-screen/                     | 大屏展示模块     |
+| 工作流         | backend/app/services/workflow/, frontend-admin/src/views/workflow/ | 工作流引擎模块   |
+| CRM            | backend/app/api/v1/crm/, frontend-admin/src/views/crm/             | CRM 业务模块     |
+| OA             | backend/app/api/v1/oa/, frontend-admin/src/views/oa/               | OA 业务模块      |
+| 工单           | backend/app/api/v1/ticket/, frontend-admin/src/views/ticket/       | 工单系统模块     |
 
 ### 5.2 插件化架构
+
 核心业务模块采用插件化设计，便于后续扩展：
+
 - 每个业务模块独立路由、独立 Service
 - 通过配置动态加载/卸载模块
-- 统一
+- 统一的事件总线实现模块间通信
