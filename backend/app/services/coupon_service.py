@@ -1,147 +1,68 @@
-from datetime import datetime, UTC
-from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func, or_
-from decimal import Decimal
+from sqlalchemy import select
+from typing import List, Optional
+from datetime import datetime
+from ..models.coupon import Coupon
+from ..schemas.coupon import CouponCreate, CouponUpdate
 
-from app.models.coupon import Coupon, CouponReceiveRecord
-from app.schemas.coupon import CouponCreate, CouponUpdate, CouponReceiveRecordCreate
-from .base import BaseService
 
+class CouponService:
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-class CouponService(BaseService[Coupon]):
-    def __init__(self):
-        super().__init__(Coupon)
+    async def create_coupon(self, coupon_in: CouponCreate) -> Coupon:
+        coupon = Coupon(**coupon_in.model_dump())
+        self.db.add(coupon)
+        await self.db.commit()
+        await self.db.refresh(coupon)
+        return coupon
 
-    async def get_multi_paginated(
-        self, db: AsyncSession, *, page: int = 1, page_size: int = 10, status: Optional[int] = None
-    ) -> tuple[List[Coupon], int]:
-        query = select(Coupon)
-        if status is not None:
+    async def get_coupon(self, coupon_id: int) -> Optional[Coupon]:
+        result = await self.db.execute(
+            select(Coupon).where(Coupon.id == coupon_id, Coupon.is_deleted == False)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_coupon_by_code(self, code: str) -> Optional[Coupon]:
+        result = await self.db.execute(
+            select(Coupon).where(Coupon.code == code, Coupon.is_deleted == False)
+        )
+        return result.scalar_one_or_none()
+
+    async def list_coupons(self, status: Optional[str] = None, page: int = 1, page_size: int = 20):
+        query = select(Coupon).where(Coupon.is_deleted == False)
+        if status:
             query = query.where(Coupon.status == status)
         query = query.order_by(Coupon.created_at.desc())
-        
-        count_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(count_query)
-        total = total_result.scalar()
-        
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-        result = await db.execute(query)
-        items = list(result.scalars().all())
-        return items, total
-
-    async def get_available_coupons(self, db: AsyncSession) -> List[Coupon]:
-        now = datetime.now(UTC)
-        query = select(Coupon).where(
-            and_(
-                Coupon.status == 1,
-                Coupon.valid_start_time <= now,
-                Coupon.valid_end_time >= now,
-                Coupon.used_count < Coupon.total_count,
-            )
-        ).order_by(Coupon.sort.asc() if hasattr(Coupon, 'sort') else Coupon.created_at.desc())
-        result = await db.execute(query)
+        query = query.offset((page - 1) * page_size).limit(page_size)
+        result = await self.db.execute(query)
         return list(result.scalars().all())
 
-
-class CouponReceiveRecordService(BaseService[CouponReceiveRecord]):
-    def __init__(self):
-        super().__init__(CouponReceiveRecord)
-
-    async def receive_coupon(
-        self, db: AsyncSession, user_id: int, coupon_id: int
-    ) -> Optional[CouponReceiveRecord]:
-        coupon_service = CouponService()
-        coupon = await coupon_service.get(db, coupon_id)
-        
+    async def update_coupon(self, coupon_id: int, coupon_in: CouponUpdate) -> Optional[Coupon]:
+        coupon = await self.get_coupon(coupon_id)
         if not coupon:
             return None
-        
-        now = datetime.now(UTC)
-        
-        if coupon.status != 1:
-            return None
-        if coupon.valid_start_time > now or coupon.valid_end_time < now:
-            return None
-        if coupon.used_count >= coupon.total_count:
-            return None
-        
-        existing_count = await self.get_user_coupon_count(db, user_id, coupon_id)
-        if existing_count >= coupon.per_limit:
-            return None
-        
-        receive_data = {
-            "user_id": user_id,
-            "coupon_id": coupon_id,
-            "status": 1,
-            "received_time": now,
-            "expire_time": coupon.valid_end_time,
-        }
-        
-        record = await self.create(db, receive_data)
-        return record
+        for key, value in coupon_in.model_dump(exclude_unset=True).items():
+            if value is not None:
+                setattr(coupon, key, value)
+        await self.db.commit()
+        await self.db.refresh(coupon)
+        return coupon
 
-    async def get_user_coupon_count(self, db: AsyncSession, user_id: int, coupon_id: int) -> int:
-        query = select(func.count(CouponReceiveRecord.id)).where(
-            and_(
-                CouponReceiveRecord.user_id == user_id,
-                CouponReceiveRecord.coupon_id == coupon_id,
-            )
-        )
-        result = await db.execute(query)
-        return result.scalar() or 0
-
-    async def get_user_coupons(
-        self, db: AsyncSession, user_id: int, status: Optional[int] = None
-    ) -> List[CouponReceiveRecord]:
-        query = select(CouponReceiveRecord).where(CouponReceiveRecord.user_id == user_id)
-        if status is not None:
-            query = query.where(CouponReceiveRecord.status == status)
-        query = query.order_by(CouponReceiveRecord.received_time.desc())
-        result = await db.execute(query)
-        return list(result.scalars().all())
-
-    async def use_coupon(
-        self, db: AsyncSession, record_id: int, order_id: int
-    ) -> Optional[CouponReceiveRecord]:
-        record = await self.get(db, record_id)
-        if not record or record.status != 1:
-            return None
-        
-        now = datetime.now(UTC)
-        update_data = {
-            "status": 2,
-            "order_id": order_id,
-            "used_time": now,
-        }
-        
-        return await self.update(db, record, update_data)
-
-    async def calculate_discount(
-        self, db: AsyncSession, record_id: int, order_amount: Decimal
-    ) -> Optional[Decimal]:
-        record = await self.get(db, record_id)
-        if not record or record.status != 1:
-            return None
-        
-        coupon_service = CouponService()
-        coupon = await coupon_service.get(db, record.coupon_id)
+    async def verify_coupon(self, code: str, order_amount: float) -> dict:
+        coupon = await self.get_coupon_by_code(code)
         if not coupon:
-            return None
-        
-        if order_amount < coupon.min_amount:
-            return None
-        
-        if coupon.type == 1:
-            return min(coupon.discount_value, order_amount)
-        elif coupon.type == 2:
-            return order_amount * (1 - coupon.discount_value)
-        elif coupon.type == 3:
-            return min(coupon.discount_value, order_amount)
-        
-        return None
-
-
-coupon_service = CouponService()
-coupon_receive_record_service = CouponReceiveRecordService()
+            return {"valid": False, "reason": "优惠券不存在"}
+        if coupon.status != "active":
+            return {"valid": False, "reason": "优惠券已停用"}
+        now = datetime.now()
+        if now < coupon.start_date or now > coupon.end_date:
+            return {"valid": False, "reason": "优惠券已过期"}
+        if order_amount < coupon.min_order_amount:
+            return {"valid": False, "reason": f"订单金额需满{coupon.min_order_amount}元"}
+        discount = coupon.discount_value
+        if coupon.type == "discount":
+            discount = order_amount * coupon.discount_value
+            if coupon.max_discount_amount:
+                discount = min(discount, coupon.max_discount_amount)
+        return {"valid": True, "discount": round(discount, 2), "coupon_id": coupon.id}

@@ -1,5 +1,14 @@
-from sqlalchemy import Column, String, Integer, SmallInteger, DateTime
+from sqlalchemy import Column, String, Integer, SmallInteger, DateTime, Table, ForeignKey
+from sqlalchemy.orm import relationship
 from .base import BaseModel
+
+
+user_role_association = Table(
+    "user_role",
+    BaseModel.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("role_id", Integer, ForeignKey("role.id"), primary_key=True)
+)
 
 
 class User(BaseModel):
@@ -15,3 +24,9 @@ class User(BaseModel):
     status = Column(SmallInteger, default=1, index=True)
     user_type = Column(SmallInteger, default=1)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
+    
+    roles = relationship("Role", secondary=user_role_association, back_populates="users")
+    
+    @property
+    def is_active(self):
+        return self.status == 1

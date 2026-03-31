@@ -1,45 +1,36 @@
+from importlib import import_module
 from fastapi import APIRouter
-from app.api.v1.admin import coupons as admin_coupons
-from app.api.v1.admin import banners as admin_banners
-from app.api.v1.shop import home as shop_home
-from app.api.v1.shop import coupons as shop_coupons
-from app.api.v1 import (
-    auth, carts, categories, dashboard, inventory,
-    logs, menus, orders, products, roles, shop_products,
-    system_config, uploads, users
-)
 
 api_router = APIRouter()
 
-admin_router = APIRouter(prefix="/admin", tags=["admin"])
-admin_router.include_router(admin_coupons.router)
-admin_router.include_router(admin_banners.router)
-if hasattr(admin_banners, 'ad_space_router'):
-    admin_router.include_router(admin_banners.ad_space_router)
-if hasattr(admin_banners, 'ad_router'):
-    admin_router.include_router(admin_banners.ad_router)
-if hasattr(admin_banners, 'floor_router'):
-    admin_router.include_router(admin_banners.floor_router)
-if hasattr(admin_banners, 'floor_product_router'):
-    admin_router.include_router(admin_banners.floor_product_router)
 
-shop_router = APIRouter(prefix="/shop", tags=["shop"])
-shop_router.include_router(shop_home.router)
-shop_router.include_router(shop_coupons.router)
+def _include_router(module_path: str, prefix: str, tags: list[str]) -> None:
+    try:
+        module = import_module(module_path)
+        router = getattr(module, "router", None)
+        if router is not None:
+            api_router.include_router(router, prefix=prefix, tags=tags)
+    except Exception as exc:
+        print(f"[router-skip] {module_path}: {exc}")
 
-api_router.include_router(admin_router)
-api_router.include_router(shop_router)
-api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-api_router.include_router(carts.router, prefix="/carts", tags=["carts"])
-api_router.include_router(categories.router, prefix="/categories", tags=["categories"])
-api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
-api_router.include_router(inventory.router, prefix="/inventory", tags=["inventory"])
-api_router.include_router(logs.router, prefix="/logs", tags=["logs"])
-api_router.include_router(menus.router, prefix="/menus", tags=["menus"])
-api_router.include_router(orders.router, prefix="/orders", tags=["orders"])
-api_router.include_router(products.router, prefix="/products", tags=["products"])
-api_router.include_router(roles.router, prefix="/roles", tags=["roles"])
-api_router.include_router(shop_products.router, prefix="/shop-products", tags=["shop-products"])
-api_router.include_router(system_config.router, prefix="/system-config", tags=["system-config"])
-api_router.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
-api_router.include_router(users.router, prefix="/users", tags=["users"])
+
+_include_router("app.api.v1.auth", "/auth", ["auth"])
+_include_router("app.api.v1.carts", "/carts", ["carts"])
+_include_router("app.api.v1.orders", "/orders", ["orders"])
+_include_router("app.api.v1.products", "/products", ["products"])
+_include_router("app.api.v1.shop_products", "/shop-products", ["shop-products"])
+_include_router("app.api.v1.categories", "/categories", ["categories"])
+_include_router("app.api.v1.users", "/users", ["users"])
+_include_router("app.api.v1.dashboard", "/dashboard", ["dashboard"])
+_include_router("app.api.v1.inventory", "/inventory", ["inventory"])
+_include_router("app.api.v1.logs", "/logs", ["logs"])
+_include_router("app.api.v1.menus", "/menus", ["menus"])
+_include_router("app.api.v1.system_config", "/system-config", ["system-config"])
+_include_router("app.api.v1.uploads", "/uploads", ["uploads"])
+_include_router("app.api.v1.roles", "/roles", ["roles"])
+_include_router("app.api.v1.payments", "/payments", ["payments"])
+_include_router("app.api.v1.coupons", "/coupons", ["coupons"])
+_include_router("app.api.v1.admin.banners", "/admin/banners", ["admin-banners"])
+_include_router("app.api.v1.admin.coupons", "/admin/coupons", ["admin-coupons"])
+_include_router("app.api.v1.shop.coupons", "/shop/coupons", ["shop-coupons"])
+_include_router("app.api.v1.shop.home", "/shop/home", ["shop-home"])

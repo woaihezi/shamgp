@@ -85,8 +85,17 @@ class OrderService:
         for cart_item in cart_items:
             cart_item.is_deleted = True
 
+        await self.db.flush()  # flush without commit to get order.id
+
+        # Eager load items before returning
+        result = await self.db.execute(
+            select(Order)
+            .where(Order.id == order.id)
+            .options(selectinload(Order.items))
+        )
+        order = result.scalar_one()
+
         await self.db.commit()
-        await self.db.refresh(order)
         return order
 
     async def get_orders(self, user_id: Optional[int] = None, status: Optional[str] = None, 

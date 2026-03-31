@@ -18,6 +18,13 @@ class ListResponseModel(BaseModel, Generic[T]):
     total: int = 0
 
 
+class PageResult(BaseModel, Generic[T]):
+    items: List[T] = []
+    total: int = 0
+    page: int = 1
+    page_size: int = 20
+
+
 class PageParams(BaseModel):
     page: int = 1
     page_size: int = 20
@@ -28,7 +35,14 @@ class TimestampMixin(BaseModel):
     updated_at: Optional[datetime] = None
 
 
-class BaseSchema(TimestampMixin):
-    model_config = ConfigDict(from_attributes=True)
-    
+class IDMixin(BaseModel):
     id: Optional[int] = None
+
+
+class BaseSchema(TimestampMixin, IDMixin):
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Backward-compatible aliases used by existing route/service code.
+TimestampSchema = TimestampMixin
+ResponseBase = ResponseModel

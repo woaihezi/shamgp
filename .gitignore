@@ -3,8 +3,11 @@ node_modules/
 vendor/
 .venv/
 env/
+venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
 # IDE
 .idea/
@@ -37,6 +40,7 @@ yarn-error.log*
 *.db
 *.sqlite
 *.sqlite3
+shop.db
 
 # Temporary files
 *.tmp
@@ -50,3 +54,21 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
+
+# Package lock files (optional - can be included if needed)
+# package-lock.json
+# yarn.lock
+
+# Python virtual environment
+backend/venv/
+
+# Compiled files
+*.py[cod]
+*$py.class
+
+# Alembic migrations (keep, but ensure no secrets)
+# alembic/versions/ - keep this
+
+# Archive files
+*.zip
+docs.zip

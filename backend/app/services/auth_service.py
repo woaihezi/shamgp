@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.core.security import verify_password, create_access_token
+from app.core.security import verify_password, create_access_token, get_password_hash
 from app.core.exceptions import AuthenticationError, ValidationError
 from app.models.user import User
 
@@ -29,13 +29,40 @@ class AuthService:
         return user
     
     @staticmethod
+    async def register(db: AsyncSession, username: str, password: str, email: str = None, phone: str = None, nickname: str = None) -> User:
+        result = await db.execute(select(User).where(User.username == username))
+        existing_user = result.scalar_one_or_none()
+        
+        if existing_user:
+            raise ValidationError("Username already exists")
+        
+        if email:
+            result = await db.execute(select(User).where(User.email == email))
+            existing_email = result.scalar_one_or_none()
+            if existing_email:
+                raise ValidationError("Email already exists")
+        
+        user = User(
+            username=username,
+            password=get_password_hash(password),
+            email=email,
+            phone=phone,
+            nickname=nickname or username,
+            is_active=True,
+            is_superuser=False
+        )
+        
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        
+        return user
+    
+    @staticmethod
     async def get_user_info(db: AsyncSession, user_id: int):
         result = await db.execute(
             select(User)
-            .options(
-                selectinload(User.roles),
-                selectinload(User.roles).selectinload('permissions')
-            )
+            .options(selectinload(User.roles))
             .where(User.id == user_id)
         )
         user = result.scalar_one_or_none()
@@ -44,9 +71,6 @@ class AuthService:
             raise AuthenticationError("User not found")
         
         roles = [role.code for role in user.roles]
-        permissions = []
-        for role in user.roles:
-            permissions.extend([perm.code for perm in role.permissions])
         
         return {
             "id": user.id,
@@ -56,5 +80,5 @@ class AuthService:
             "email": user.email,
             "phone": user.phone,
             "roles": roles,
-            "permissions": list(set(permissions))
+            "permissions": []
         }

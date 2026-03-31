@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "ShamGP E-commerce"
     API_V1_STR: str = "/api/v1"
     
-    DB_TYPE: str = "mysql"
+    DB_TYPE: str = "sqlite"
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
     DB_USER: str = "root"

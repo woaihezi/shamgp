@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, Integer, Text, ForeignKey, Decimal
+from sqlalchemy import Column, BigInteger, String, Integer, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import Base, TimestampMixin
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, Integer, ForeignKey, Decimal, Text
+from sqlalchemy import Column, BigInteger, String, Integer, ForeignKey, Numeric, Text
 from sqlalchemy.orm import relationship
 from .base import Base, TimestampMixin
 
@@ -12,9 +12,9 @@ class ProductSku(Base, TimestampMixin):
     name = Column(String(200), nullable=False, comment="SKU名称")
     specs = Column(Text, nullable=True, comment="规格JSON")
     image = Column(String(255), nullable=True, comment="SKU图片")
-    price = Column(Decimal(10, 2), nullable=False, comment="价格")
-    original_price = Column(Decimal(10, 2), nullable=True, comment="原价")
-    cost_price = Column(Decimal(10, 2), nullable=True, comment="成本价")
+    price = Column(Numeric(10, 2), nullable=False, comment="价格")
+    original_price = Column(Numeric(10, 2), nullable=True, comment="原价")
+    cost_price = Column(Numeric(10, 2), nullable=True, comment="成本价")
     status = Column(Integer, default=1, comment="状态: 0-禁用, 1-启用")
     sort = Column(Integer, default=0, comment="排序")
 
