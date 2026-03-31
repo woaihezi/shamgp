@@ -49,6 +49,17 @@ async def get_current_active_user(
     return current_user
 
 
+async def get_current_active_superuser(
+    current_user: User = Depends(get_current_active_user)
+) -> User:
+    if not getattr(current_user, "is_superuser", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superuser permissions required"
+        )
+    return current_user
+
+
 async def get_user_permissions(db: AsyncSession, user_id: int) -> set:
     """获取用户所有权限 code 集合"""
     result = await db.execute(

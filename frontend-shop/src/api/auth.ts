@@ -17,18 +17,17 @@ export interface LoginResponse {
 }
 
 export function login(data: LoginParams) {
-  // 路径 /auth/login → FastAPI 最终路由 /api/v1/auth/login
-  return request.post<LoginResponse>('/auth/login', data)
+  return request.post<LoginResponse>('/api/v1/auth/login', data)
 }
 
 export function register(data: RegisterParams) {
-  return request.post<LoginResponse>('/auth/register', data)
+  return request.post<LoginResponse>('/api/v1/auth/register', data)
 }
 
 export function getUserInfo() {
-  return request.get('/auth/userinfo')
+  return request.get('/api/v1/auth/userinfo')
 }
 
 export function logout() {
-  return request.post('/auth/logout')
+  return request.post('/api/v1/auth/logout')
 }

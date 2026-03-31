@@ -1,55 +1,62 @@
 <template>
-  <div class="register-page">
-    <div class="register-container">
-      <div class="register-card card">
-        <h1 class="register-title">注册</h1>
-        <form @submit.prevent="handleRegister" class="register-form">
-          <div class="form-group">
-            <label>用户名</label>
-            <input v-model="form.username" type="text" placeholder="请输入用户名" required>
-          </div>
-          <div class="form-group">
-            <label>邮箱</label>
-            <input v-model="form.email" type="email" placeholder="请输入邮箱">
-          </div>
-          <div class="form-group">
-            <label>手机号</label>
-            <input v-model="form.phone" type="tel" placeholder="请输入手机号">
-          </div>
-          <div class="form-group">
-            <label>密码</label>
-            <input v-model="form.password" type="password" placeholder="请输入密码" required>
-          </div>
-          <div class="form-group">
-            <label>确认密码</label>
-            <input v-model="form.confirmPassword" type="password" placeholder="请再次输入密码" required>
-          </div>
-          <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>
-          <button type="submit" class="btn btn-primary btn-large" :disabled="loading">
-            {{ loading ? '注册中...' : '注册' }}
-          </button>
-        </form>
-        <div class="register-footer">
-          <span>已有账号？</span>
-          <router-link to="/login">立即登录</router-link>
-        </div>
-      </div>
+  <div class="auth-page">
+    <div class="auth-card card">
+      <h1>注册</h1>
+      <p class="subtitle">创建新账号后即可下单与查看订单</p>
+
+      <form class="auth-form" @submit.prevent="handleRegister">
+        <label class="field">
+          <span>用户名</span>
+          <input v-model.trim="form.username" type="text" placeholder="至少 3 个字符" required />
+        </label>
+
+        <label class="field">
+          <span>邮箱</span>
+          <input v-model.trim="form.email" type="email" placeholder="可选" />
+        </label>
+
+        <label class="field">
+          <span>手机号</span>
+          <input v-model.trim="form.phone" type="tel" placeholder="可选" />
+        </label>
+
+        <label class="field">
+          <span>密码</span>
+          <input v-model="form.password" type="password" placeholder="至少 6 位" required />
+        </label>
+
+        <label class="field">
+          <span>确认密码</span>
+          <input v-model="form.confirmPassword" type="password" placeholder="再次输入密码" required />
+        </label>
+
+        <p v-if="errorMsg" class="error">{{ errorMsg }}</p>
+
+        <button class="btn btn-primary submit-btn" type="submit" :disabled="loading">
+          {{ loading ? '注册中...' : '注册' }}
+        </button>
+      </form>
+
+      <p class="footer-text">
+        已有账号？
+        <router-link to="/login">去登录</router-link>
+      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
 import { register as registerApi } from '@/api/auth'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const loading = ref(false)
 const errorMsg = ref('')
-const form = ref({
+const form = reactive({
   username: '',
   email: '',
   phone: '',
@@ -57,45 +64,47 @@ const form = ref({
   confirmPassword: ''
 })
 
-async function handleRegister() {
-  if (form.value.password !== form.value.confirmPassword) {
+function validate() {
+  if (form.username.length < 3) {
+    errorMsg.value = '用户名至少 3 个字符'
+    return false
+  }
+  if (form.password.length < 6) {
+    errorMsg.value = '密码至少 6 位'
+    return false
+  }
+  if (form.password !== form.confirmPassword) {
     errorMsg.value = '两次输入的密码不一致'
-    return
+    return false
   }
-  
-  if (!form.value.username || form.value.username.length < 3) {
-    errorMsg.value = '用户名至少3个字符'
-    return
-  }
-  
-  if (!form.value.password || form.value.password.length < 6) {
-    errorMsg.value = '密码至少6个字符'
-    return
-  }
+  return true
+}
 
-  loading.value = true
+async function handleRegister() {
   errorMsg.value = ''
-  
+  if (!validate()) return
+  loading.value = true
+
   try {
     const res = await registerApi({
-      username: form.value.username,
-      email: form.value.email || undefined,
-      phone: form.value.phone || undefined,
-      password: form.value.password
+      username: form.username,
+      password: form.password,
+      email: form.email || undefined,
+      phone: form.phone || undefined
     }) as any
-    const token = res.data?.access_token
-    if (!token) throw new Error('No token returned')
+
+    const token = res?.data?.access_token
+    if (!token) throw new Error('注册成功但未返回 token')
 
     userStore.setToken(token)
-    userStore.setUser({ 
-      id: 1, 
-      username: form.value.username,
-      email: form.value.email,
-      phone: form.value.phone
+    userStore.setUser({
+      username: form.username,
+      email: form.email || undefined,
+      phone: form.phone || undefined
     })
-    router.push('/')
+    router.replace('/')
   } catch (error: any) {
-    errorMsg.value = error?.message || '注册失败，请重试'
+    errorMsg.value = error?.response?.data?.detail || error?.message || '注册失败，请稍后重试'
   } finally {
     loading.value = false
   }
@@ -103,94 +112,82 @@ async function handleRegister() {
 </script>
 
 <style scoped>
-.register-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
+.auth-page {
+  min-height: calc(100vh - 120px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
 }
 
-.register-container {
+.auth-card {
   width: 100%;
   max-width: 420px;
+  padding: 28px;
 }
 
-.register-card {
-  padding: 40px;
-}
-
-.register-title {
-  text-align: center;
+h1 {
+  margin: 0;
   font-size: 28px;
-  color: #333;
-  margin-bottom: 32px;
+  color: #222;
 }
 
-.register-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.subtitle {
+  margin: 8px 0 20px;
+  color: #666;
+  font-size: 14px;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
   gap: 8px;
 }
 
-.form-group label {
+.field span {
   font-size: 14px;
-  color: #666;
+  color: #444;
 }
 
-.form-group input {
-  padding: 14px 16px;
+.field input {
   border: 1px solid #ddd;
   border-radius: 8px;
+  padding: 12px;
   font-size: 15px;
   outline: none;
-  transition: border-color 0.3s;
 }
 
-.form-group input:focus {
+.field input:focus {
   border-color: #ff6b6b;
 }
 
-.error-msg {
-  color: #e74c3c;
+.error {
+  margin: 0;
   font-size: 13px;
-  padding: 8px 12px;
-  background: #fdf0ef;
-  border-radius: 6px;
+  color: #d93025;
 }
 
-.btn-large {
-  padding: 14px;
-  font-size: 16px;
-  margin-top: 12px;
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
 }
 
-.btn-large:disabled {
-  opacity: 0.6;
+.submit-btn:disabled {
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
-.register-footer {
-  text-align: center;
-  margin-top: 24px;
+.footer-text {
+  margin: 14px 0 0;
   color: #666;
-  font-size: 14px;
+  text-align: center;
 }
 
-.register-footer a {
+.footer-text a {
   color: #ff6b6b;
-  font-weight: 500;
-  margin-left: 4px;
-}
-
-.register-footer a:hover {
-  text-decoration: underline;
 }
 </style>

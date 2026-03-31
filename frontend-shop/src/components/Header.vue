@@ -1,28 +1,24 @@
 <template>
   <header class="header">
-    <div class="container">
-      <div class="header-content">
-        <router-link to="/" class="logo">商城</router-link>
-        <nav class="nav">
-          <router-link to="/">首页</router-link>
-          <router-link to="/category">分类</router-link>
-          <router-link to="/products">商品</router-link>
-        </nav>
-        <div class="user-actions">
-          <router-link to="/cart" class="cart-link">
-            <span>购物车</span>
-            <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
-          </router-link>
-          <template v-if="isLoggedIn">
-            <router-link to="/orders">我的订单</router-link>
-            <router-link to="/profile">个人中心</router-link>
-            <a href="javascript:void(0)" @click="handleLogout">退出</a>
-          </template>
-          <template v-else>
-            <router-link to="/login">登录</router-link>
-            <router-link to="/register">注册</router-link>
-          </template>
-        </div>
+    <div class="container bar">
+      <router-link class="logo" to="/">ShamGP</router-link>
+
+      <nav class="nav">
+        <router-link to="/">首页</router-link>
+        <router-link to="/products">商品</router-link>
+        <router-link to="/cart">购物车</router-link>
+        <router-link to="/orders">订单</router-link>
+      </nav>
+
+      <div class="actions">
+        <template v-if="isLoggedIn">
+          <router-link to="/profile">{{ displayName }}</router-link>
+          <button class="logout" type="button" @click="handleLogout">退出</button>
+        </template>
+        <template v-else>
+          <router-link to="/login">登录</router-link>
+          <router-link to="/register">注册</router-link>
+        </template>
       </div>
     </div>
   </header>
@@ -32,92 +28,91 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { useCartStore } from '@/stores/cart'
 
 const router = useRouter()
 const userStore = useUserStore()
-const cartStore = useCartStore()
 
 const isLoggedIn = computed(() => userStore.isLoggedIn)
-const cartCount = computed(() => cartStore.totalCount)
+const displayName = computed(() => userStore.user?.nickname || userStore.user?.username || '用户')
 
 function handleLogout() {
   userStore.logout()
-  router.push('/')
+  router.push('/login')
 }
 
 onMounted(() => {
   userStore.initFromStorage()
-  cartStore.loadFromStorage()
 })
 </script>
 
 <style scoped>
 .header {
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid #ececec;
 }
 
-.header-content {
+.bar {
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 60px;
+  gap: 16px;
 }
 
 .logo {
   font-size: 24px;
-  font-weight: bold;
-  color: #ff6b6b;
+  font-weight: 700;
+  color: #ff5a3c;
 }
 
 .nav {
   display: flex;
-  gap: 30px;
+  align-items: center;
+  gap: 20px;
 }
 
 .nav a {
   color: #333;
-  transition: color 0.3s;
 }
 
-.nav a:hover,
 .nav a.router-link-active {
-  color: #ff6b6b;
+  color: #ff5a3c;
+  font-weight: 600;
 }
 
-.user-actions {
+.actions {
   display: flex;
-  gap: 20px;
   align-items: center;
+  gap: 14px;
 }
 
-.user-actions a {
+.actions a {
   color: #333;
-  transition: color 0.3s;
 }
 
-.user-actions a:hover {
-  color: #ff6b6b;
+.logout {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
 }
 
-.cart-link {
-  position: relative;
-}
+@media (max-width: 900px) {
+  .bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px 0;
+  }
 
-.cart-badge {
-  position: absolute;
-  top: -8px;
-  right: -12px;
-  background: #ff6b6b;
-  color: white;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  min-width: 18px;
-  text-align: center;
+  .nav {
+    width: 100%;
+    order: 3;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
 }
 </style>

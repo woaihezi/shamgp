@@ -16,24 +16,24 @@ class SystemConfigService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create(self, config_data: SystemConfigCreate) -&gt; SystemConfigResponse:
+    async def create(self, config_data: SystemConfigCreate) -> SystemConfigResponse:
         db_config = SystemConfig(**config_data.model_dump())
         self.db.add(db_config)
         await self.db.commit()
         await self.db.refresh(db_config)
         return SystemConfigResponse.model_validate(db_config)
 
-    async def get_by_id(self, config_id: int) -&gt; Optional[SystemConfigResponse]:
+    async def get_by_id(self, config_id: int) -> Optional[SystemConfigResponse]:
         result = await self.db.execute(select(SystemConfig).where(SystemConfig.id == config_id))
         config = result.scalar_one_or_none()
         return SystemConfigResponse.model_validate(config) if config else None
 
-    async def get_by_key(self, config_key: str) -&gt; Optional[SystemConfigResponse]:
+    async def get_by_key(self, config_key: str) -> Optional[SystemConfigResponse]:
         result = await self.db.execute(select(SystemConfig).where(SystemConfig.config_key == config_key))
         config = result.scalar_one_or_none()
         return SystemConfigResponse.model_validate(config) if config else None
 
-    async def update(self, config_id: int, config_data: SystemConfigUpdate) -&gt; Optional[SystemConfigResponse]:
+    async def update(self, config_id: int, config_data: SystemConfigUpdate) -> Optional[SystemConfigResponse]:
         result = await self.db.execute(select(SystemConfig).where(SystemConfig.id == config_id))
         db_config = result.scalar_one_or_none()
         
@@ -48,7 +48,7 @@ class SystemConfigService:
         
         return None
 
-    async def delete(self, config_id: int) -&gt; bool:
+    async def delete(self, config_id: int) -> bool:
         result = await self.db.execute(select(SystemConfig).where(SystemConfig.id == config_id))
         db_config = result.scalar_one_or_none()
         
@@ -59,7 +59,7 @@ class SystemConfigService:
         
         return False
 
-    async def list(self, query: SystemConfigQuery) -&gt; PageResponse[SystemConfigResponse]:
+    async def list(self, query: SystemConfigQuery) -> PageResponse[SystemConfigResponse]:
         stmt = select(SystemConfig)
         
         if query.config_key:
@@ -86,7 +86,7 @@ class SystemConfigService:
             items=[SystemConfigResponse.model_validate(item) for item in items]
         )
 
-    async def get_public_configs(self) -&gt; List[SystemConfigResponse]:
+    async def get_public_configs(self) -> List[SystemConfigResponse]:
         result = await self.db.execute(
             select(SystemConfig).where(and_(SystemConfig.is_public == True, SystemConfig.status == 1))
             .order_by(SystemConfig.sort)

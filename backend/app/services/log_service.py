@@ -19,14 +19,14 @@ class LogService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_operation_log(self, log_data: OperationLogCreate) -&gt; OperationLogResponse:
+    async def create_operation_log(self, log_data: OperationLogCreate) -> OperationLogResponse:
         db_log = OperationLog(**log_data.model_dump())
         self.db.add(db_log)
         await self.db.commit()
         await self.db.refresh(db_log)
         return OperationLogResponse.model_validate(db_log)
 
-    async def get_operation_logs(self, query: OperationLogQuery) -&gt; PageResponse[OperationLogResponse]:
+    async def get_operation_logs(self, query: OperationLogQuery) -> PageResponse[OperationLogResponse]:
         stmt = select(OperationLog)
         
         if query.user_id:
@@ -40,9 +40,9 @@ class LogService:
         if query.status is not None:
             stmt = stmt.where(OperationLog.status == query.status)
         if query.start_date:
-            stmt = stmt.where(OperationLog.created_at &gt;= query.start_date)
+            stmt = stmt.where(OperationLog.created_at >= query.start_date)
         if query.end_date:
-            stmt = stmt.where(OperationLog.created_at &lt;= query.end_date)
+            stmt = stmt.where(OperationLog.created_at <= query.end_date)
         
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total_result = await self.db.execute(count_stmt)
@@ -61,14 +61,14 @@ class LogService:
             items=[OperationLogResponse.model_validate(item) for item in items]
         )
 
-    async def create_login_log(self, log_data: LoginLogCreate) -&gt; LoginLogResponse:
+    async def create_login_log(self, log_data: LoginLogCreate) -> LoginLogResponse:
         db_log = LoginLog(**log_data.model_dump())
         self.db.add(db_log)
         await self.db.commit()
         await self.db.refresh(db_log)
         return LoginLogResponse.model_validate(db_log)
 
-    async def get_login_logs(self, query: LoginLogQuery) -&gt; PageResponse[LoginLogResponse]:
+    async def get_login_logs(self, query: LoginLogQuery) -> PageResponse[LoginLogResponse]:
         stmt = select(LoginLog)
         
         if query.user_id:
@@ -78,9 +78,9 @@ class LogService:
         if query.status is not None:
             stmt = stmt.where(LoginLog.status == query.status)
         if query.start_date:
-            stmt = stmt.where(LoginLog.created_at &gt;= query.start_date)
+            stmt = stmt.where(LoginLog.created_at >= query.start_date)
         if query.end_date:
-            stmt = stmt.where(LoginLog.created_at &lt;= query.end_date)
+            stmt = stmt.where(LoginLog.created_at <= query.end_date)
         
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total_result = await self.db.execute(count_stmt)

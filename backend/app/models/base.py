@@ -12,6 +12,11 @@ class SoftDeleteMixin:
     is_deleted = Column(Boolean, default=False, nullable=False)
 
 
+class IDMixin:
+    """Simple id-only mixin for banner-like models."""
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+
 class BaseModel(Base, TimestampMixin, SoftDeleteMixin):
     __abstract__ = True
     

@@ -5,13 +5,13 @@
       <div class="container">
         <div v-if="product" class="product-detail card">
           <div class="product-gallery">
-            <img :src="product.image || 'https://via.placeholder.com/500x500?text=商品图片'" :alt="product.name" class="main-image">
+            <img :src="product.cover_image || product.mainImage || 'https://via.placeholder.com/500x500?text=商品图片'" :alt="product.name" class="main-image">
           </div>
           <div class="product-info">
             <h1 class="product-title">{{ product.name }}</h1>
             <div class="product-price-section">
-              <span class="price">¥{{ product.price.toFixed(2) }}</span>
-              <span class="stock">库存: {{ product.stock }}件</span>
+              <span class="price">¥{{ (product.price || product.minPrice || 0).toFixed(2) }}</span>
+              <span class="stock">库存: {{ (product as any).stock || (product as any).inventory?.available_stock || 99 }}件</span>
             </div>
             <div class="product-description">
               <h3>商品描述</h3>
@@ -21,8 +21,8 @@
               <div class="quantity-selector">
                 <label>数量:</label>
                 <button @click="quantity--" :disabled="quantity <= 1">-</button>
-                <input type="number" v-model.number="quantity" min="1" :max="product.stock">
-                <button @click="quantity++" :disabled="quantity >= product.stock">+</button>
+                <input type="number" v-model.number="quantity" min="1" :max="(product as any).stock || (product as any).inventory?.available_stock || 99">
+                <button @click="quantity++" :disabled="quantity >= ((product as any).stock || (product as any).inventory?.available_stock || 99)">+</button>
               </div>
               <button class="btn btn-primary btn-large" @click="handleAddToCart">
                 加入购物车
@@ -48,68 +48,38 @@ import { useRoute, useRouter } from 'vue-router'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import { useCartStore } from '@/stores/cart'
-import type { Product } from '@/api/product'
+import { shopProductApi } from '@/api/product'
+import type { ProductSpu } from '@/api/product'
 
 const route = useRoute()
 const router = useRouter()
 const cartStore = useCartStore()
-const product = ref<Product | null>(null)
+const product = ref<ProductSpu | null>(null)
 const quantity = ref(1)
 
 onMounted(() => {
   loadProduct()
 })
 
-function loadProduct() {
+async function loadProduct() {
   const productId = Number(route.params.id)
-  const mockProducts: Product[] = [
-    {
-      id: 1,
-      name: 'iPhone 15 Pro Max',
-      description: '苹果最新旗舰手机，钛金属设计，A17 Pro芯片，支持USB 3.2传输速度，Pro级摄像头系统，全天候显示的超视网膜XDR显示屏',
-      price: 9999,
-      stock: 100,
-      categoryId: 1,
-      image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=iPhone%2015%20Pro%20Max%20smartphone&image_size=square_hd',
-      status: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 2,
-      name: 'MacBook Pro 14英寸',
-      description: 'M3 Pro芯片，18小时续航，Liquid Retina XDR显示屏，专业级性能，适合创作者和开发者',
-      price: 14999,
-      stock: 50,
-      categoryId: 2,
-      image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MacBook%20Pro%20laptop&image_size=square_hd',
-      status: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 3,
-      name: 'AirPods Pro 2',
-      description: '主动降噪，自适应通透模式，空间音频，个性化音量，对话感知，查找功能',
-      price: 1899,
-      stock: 200,
-      categoryId: 3,
-      image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=AirPods%20Pro%20wireless%20earbuds&image_size=square_hd',
-      status: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+  try {
+    const res: any = await shopProductApi.getProduct(productId)
+    if (res.code === 200) {
+      product.value = res.data || res
     }
-  ]
-  product.value = mockProducts.find(p => p.id === productId) || mockProducts[0]
+  } catch (e) {
+    console.error('加载商品详情失败', e)
+  }
 }
 
 function handleAddToCart() {
   if (product.value) {
     cartStore.addItem({
-      id: product.value.id,
+      id: product.value.id!,
       name: product.value.name,
-      price: product.value.price,
-      image: product.value.image
+      price: product.value.price || product.value.minPrice || 0,
+      image: product.value.cover_image || product.value.mainImage
     }, quantity.value)
     alert('已加入购物车')
   }
@@ -118,10 +88,10 @@ function handleAddToCart() {
 function handleBuyNow() {
   if (product.value) {
     cartStore.addItem({
-      id: product.value.id,
+      id: product.value.id!,
       name: product.value.name,
-      price: product.value.price,
-      image: product.value.image
+      price: product.value.price || product.value.minPrice || 0,
+      image: product.value.cover_image || product.value.mainImage
     }, quantity.value)
     router.push('/checkout')
   }

@@ -29,22 +29,26 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/profile',
     name: 'Profile',
-    component: () => import('@/views/Profile/index.vue')
+    component: () => import('@/views/Profile/index.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/cart',
     name: 'Cart',
-    component: () => import('@/views/cart/CartList.vue')
+    component: () => import('@/views/cart/CartList.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/checkout',
     name: 'Checkout',
-    component: () => import('@/views/checkout/Checkout.vue')
+    component: () => import('@/views/checkout/Checkout.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/orders',
     name: 'Orders',
-    component: () => import('@/views/order/OrderList.vue')
+    component: () => import('@/views/order/OrderList.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/order/list',
@@ -54,12 +58,14 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/orders/:id',
     name: 'OrderDetail',
-    component: () => import('@/views/order/OrderDetail.vue')
+    component: () => import('@/views/order/OrderDetail.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/order/detail/:id',
     name: 'OrderDetailLegacy',
-    component: () => import('@/views/order/OrderDetail.vue')
+    component: () => import('@/views/order/OrderDetail.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

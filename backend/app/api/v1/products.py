@@ -50,6 +50,56 @@ async def get_simple_product(
     return ResponseModel(data=Product.model_validate(product))
 
 
+# --- 商城端别名路由（匹配前端 /api/v1/products 路径）---
+@router.get("", response_model=ResponseModel[PageResult[ProductSimple]])
+async def get_shop_products(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    category_id: Optional[int] = Query(None),
+    keyword: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db)
+):
+    """商城商品列表（公开）"""
+    skip = (page - 1) * page_size
+    service = SimpleProductService(db)
+    items, total = await service.get_multi(
+        category_id=category_id,
+        status=1,
+        keyword=keyword,
+        skip=skip,
+        limit=page_size
+    )
+    return ResponseModel(data=PageResult(
+        items=[ProductSimple.model_validate(item) for item in items],
+        total=total,
+        page=page,
+        page_size=page_size
+    ))
+
+
+@router.get("/{id}", response_model=ResponseModel[Product])
+async def get_shop_product(
+    id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """商城商品详情（公开）"""
+    service = SimpleProductService(db)
+    product = await service.get(id=id)
+    if not product:
+        raise HTTPException(status_code=404, detail="商品不存在")
+    return ResponseModel(data=Product.model_validate(product))
+async def get_simple_product(
+    id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """获取简单商品详情（公开，无需认证）"""
+    service = SimpleProductService(db)
+    product = await service.get(id=id)
+    if not product:
+        raise HTTPException(status_code=404, detail="商品不存在")
+    return ResponseModel(data=Product.model_validate(product))
+
+
 @router.post("/simple", response_model=ResponseModel[Product])
 async def create_simple_product(
     obj_in: ProductCreate,

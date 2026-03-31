@@ -46,3 +46,7 @@ class BaseSchema(TimestampMixin, IDMixin):
 # Backward-compatible aliases used by existing route/service code.
 TimestampSchema = TimestampMixin
 ResponseBase = ResponseModel
+PaginationResult = PageResult
+PageResponse = ListResponseModel
+PaginationParams = PageParams
+IdSchema = IDMixin

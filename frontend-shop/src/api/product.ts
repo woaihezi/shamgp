@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+﻿import request from '@/utils/request'
 
 export interface Category {
   id?: number
@@ -105,17 +105,11 @@ export interface ResponseBase<T> {
   data?: T
 }
 
-// 后端实际路径：/api/v1/categories 和 /api/v1/products
-const API_BASE = '/api/v1'
-
 export const shopProductApi = {
-  // 分类列表
-  getCategories: () => request.get<ResponseBase<Category[]>>(`${API_BASE}/categories`),
+  getCategories: () => request.get<ResponseBase<Category[]>>('/categories'),
 
-  // 品牌列表（暂时用空数组，接口不存在）
-  getBrands: () => request.get<ResponseBase<Brand[]>>(`${API_BASE}/brands`).catch(() => ({ data: [] })),
+  getBrands: () => request.get<ResponseBase<Brand[]>>('/brands').catch(() => ({ data: [] })),
 
-  // 商品列表
   getProducts: (params: {
     page?: number
     pageSize?: number
@@ -126,20 +120,16 @@ export const shopProductApi = {
     const p: any = { page: params?.page || 1, page_size: params?.pageSize || 12 }
     if (params?.categoryId) p.category_id = params.categoryId
     if (params?.keyword) p.keyword = params.keyword
-    return request.get<ResponseBase<PageResult<ProductSpu>>>(`${API_BASE}/products`, { params: p })
+    return request.get<ResponseBase<PageResult<ProductSpu>>>('/products', { params: p })
   },
 
-  // 商品详情
-  getProduct: (id: number) =>
-    request.get<ResponseBase<ProductSpu>>(`${API_BASE}/products/${id}`),
+  getProduct: (id: number) => request.get<ResponseBase<ProductSpu>>(`/products/${id}`),
 
-  // SKU 列表
   getProductSkus: (spuId: number) =>
-    request.get<ResponseBase<ProductSku[]>>(`${API_BASE}/products/${spuId}/skus`).catch(() => ({ data: [] })),
+    request.get<ResponseBase<ProductSku[]>>(`/products/${spuId}/skus`).catch(() => ({ data: [] })),
 
-  // 商品图片
   getProductImages: (spuId: number, imageType?: number) =>
-    request.get<ResponseBase<ProductImage[]>>(`${API_BASE}/products/${spuId}/images`, {
-      params: { imageType }
-    }).catch(() => ({ data: [] }))
+    request
+      .get<ResponseBase<ProductImage[]>>(`/products/${spuId}/images`, { params: { imageType } })
+      .catch(() => ({ data: [] }))
 }

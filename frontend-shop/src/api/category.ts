@@ -10,5 +10,5 @@ export interface Category {
 }
 
 export function getCategoryList() {
-  return request.get<Category[]>('/shop/categories')
+  return request.get<Category[]>('/api/v1/categories')
 }

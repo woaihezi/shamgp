@@ -18,7 +18,7 @@ class DashboardService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_stats(self) -&gt; DashboardStats:
+    async def get_stats(self) -> DashboardStats:
         stats = DashboardStats()
         
         today = datetime.now().date()
@@ -35,7 +35,7 @@ class DashboardService:
         
         return stats
 
-    async def get_sales_trend(self, days: int = 7) -&gt; SalesTrendResponse:
+    async def get_sales_trend(self, days: int = 7) -> SalesTrendResponse:
         trend = []
         total_amount = 0.0
         total_orders = 0
@@ -50,7 +50,7 @@ class DashboardService:
         
         return SalesTrendResponse(trend=trend, total_amount=total_amount, total_orders=total_orders)
 
-    async def get_user_growth(self, days: int = 7) -&gt; UserGrowthResponse:
+    async def get_user_growth(self, days: int = 7) -> UserGrowthResponse:
         growth = []
         cumulative = 50
         
@@ -62,7 +62,7 @@ class DashboardService:
         
         return UserGrowthResponse(growth=growth, total_users=cumulative)
 
-    async def get_order_stats(self) -&gt; OrderStatsResponse:
+    async def get_order_stats(self) -> OrderStatsResponse:
         stats = OrderStats(
             pending_payment=5,
             paid=15,

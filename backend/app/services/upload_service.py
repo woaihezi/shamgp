@@ -27,7 +27,7 @@ class UploadService:
         file: UploadFile,
         category: Optional[str] = None,
         upload_user_id: Optional[int] = None
-    ) -&gt; UploadResponse:
+    ) -> UploadResponse:
         upload_dir = settings.UPLOAD_DIR
         if not os.path.exists(upload_dir):
             os.makedirs(upload_dir)
@@ -41,7 +41,7 @@ class UploadService:
         file_path = os.path.join(upload_dir, storage_name)
         
         content = await file.read()
-        if len(content) &gt; settings.MAX_UPLOAD_SIZE:
+        if len(content) > settings.MAX_UPLOAD_SIZE:
             raise ValueError(f"文件大小超过限制: {settings.MAX_UPLOAD_SIZE} bytes")
         
         with open(file_path, "wb") as f:
@@ -74,12 +74,12 @@ class UploadService:
             file_size=db_file.file_size
         )
 
-    async def get_file(self, file_id: int) -&gt; Optional[FileResponse]:
+    async def get_file(self, file_id: int) -> Optional[FileResponse]:
         result = await self.db.execute(select(File).where(File.id == file_id))
         file = result.scalar_one_or_none()
         return FileResponse.model_validate(file) if file else None
 
-    async def update_file(self, file_id: int, file_data: FileUpdate) -&gt; Optional[FileResponse]:
+    async def update_file(self, file_id: int, file_data: FileUpdate) -> Optional[FileResponse]:
         result = await self.db.execute(select(File).where(File.id == file_id))
         db_file = result.scalar_one_or_none()
         
@@ -94,7 +94,7 @@ class UploadService:
         
         return None
 
-    async def delete_file(self, file_id: int) -&gt; bool:
+    async def delete_file(self, file_id: int) -> bool:
         result = await self.db.execute(select(File).where(File.id == file_id))
         db_file = result.scalar_one_or_none()
         
@@ -108,7 +108,7 @@ class UploadService:
         
         return False
 
-    async def list_files(self, query: FileQuery) -&gt; PageResponse[FileResponse]:
+    async def list_files(self, query: FileQuery) -> PageResponse[FileResponse]:
         stmt = select(File)
         
         if query.filename:

@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
 const service: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: '/api/v1',
   timeout: 15000,
 })
 
@@ -23,11 +23,23 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   (response: AxiosResponse) => {
     const res = response.data
-    if (res.code !== 200) {
-      console.error(res.message || 'Error')
-      return Promise.reject(new Error(res.message || 'Error'))
+
+    // Prefer backend standard envelope: { code, message, data }.
+    // Fall back to raw payload for compatibility.
+    if (res && typeof res === 'object' && 'code' in res) {
+      if (res.code !== 200) {
+        console.error(res.message || 'Error')
+        return Promise.reject(new Error(res.message || 'Error'))
+      }
+      return res
     }
-    return res
+
+    if (res == null) {
+      console.error('Empty response')
+      return Promise.reject(new Error('Empty response'))
+    }
+
+    return { code: 200, message: 'success', data: res }
   },
   (error) => {
     if (error.response?.status === 401) {
