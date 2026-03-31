@@ -22,7 +22,13 @@ class Role(BaseModel):
     sort = Column(Integer, default=0, nullable=False, comment="排序")
 
     users = relationship("User", secondary=user_role_association, back_populates="roles")
+    # Import Menu to register it in SQLAlchemy's class registry before resolving the relationship
     menus = relationship("Menu", secondary=role_menu_association, back_populates="roles")
 
     # permissions 由 Permission.role_permission_association 表通过 back_populates="roles" 反向引用
     # 不在此处定义 relationship，直接通过 Permission.role_permission_association 的反向引用访问
+
+
+# Late import to ensure Menu is registered in SQLAlchemy's class registry
+# This fixes: InvalidRequestError: expression 'Menu' failed to locate a name
+from app.models.menu import Menu  # noqa: E402, F401

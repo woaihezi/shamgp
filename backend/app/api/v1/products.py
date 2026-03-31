@@ -88,16 +88,6 @@ async def get_shop_product(
     if not product:
         raise HTTPException(status_code=404, detail="商品不存在")
     return ResponseModel(data=Product.model_validate(product))
-async def get_simple_product(
-    id: int,
-    db: AsyncSession = Depends(get_db)
-):
-    """获取简单商品详情（公开，无需认证）"""
-    service = SimpleProductService(db)
-    product = await service.get(id=id)
-    if not product:
-        raise HTTPException(status_code=404, detail="商品不存在")
-    return ResponseModel(data=Product.model_validate(product))
 
 
 @router.post("/simple", response_model=ResponseModel[Product])
