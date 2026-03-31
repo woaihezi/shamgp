@@ -7,7 +7,7 @@ from sqlalchemy import select, text
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.core.exceptions import AuthenticationError
-from app.models.user import User
+from app.models.user import User, user_role_association
 from app.models.role import Role
 from app.models.permission import Permission, role_permission_association
 
@@ -63,7 +63,7 @@ async def get_current_active_superuser(
 async def get_user_permissions(db: AsyncSession, user_id: int) -> set:
     """获取用户所有权限 code 集合"""
     result = await db.execute(
-        select(User).where(User.id == user_id).options()
+        select(User).where(User.id == user_id)
     )
     user = result.scalar_one_or_none()
     if not user:
@@ -71,7 +71,7 @@ async def get_user_permissions(db: AsyncSession, user_id: int) -> set:
 
     # 查询用户的角色
     role_result = await db.execute(
-        select(user.c.role).where(user.c.user_id == user_id)
+        select(user_role_association.c.role_id).where(user_role_association.c.user_id == user_id)
     )
     role_ids = [row[0] for row in role_result.fetchall()]
 
