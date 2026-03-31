@@ -1,0 +1,16 @@
+Total tables: 15
+  addresses
+  alembic_version
+  cart_items
+  coupons
+  order_items
+  orders
+  permission
+  product_categories
+  products
+  refunds
+  role
+  role_permission
+  sqlite_sequence
+  user_role
+  users
