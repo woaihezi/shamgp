@@ -24,6 +24,7 @@
             <label>确认密码</label>
             <input v-model="form.confirmPassword" type="password" placeholder="请再次输入密码" required>
           </div>
+          <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>
           <button type="submit" class="btn btn-primary btn-large" :disabled="loading">
             {{ loading ? '注册中...' : '注册' }}
           </button>
@@ -41,11 +42,13 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { register as registerApi } from '@/api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const loading = ref(false)
+const errorMsg = ref('')
 const form = ref({
   username: '',
   email: '',
@@ -56,25 +59,43 @@ const form = ref({
 
 async function handleRegister() {
   if (form.value.password !== form.value.confirmPassword) {
-    alert('两次输入的密码不一致')
+    errorMsg.value = '两次输入的密码不一致'
+    return
+  }
+  
+  if (!form.value.username || form.value.username.length < 3) {
+    errorMsg.value = '用户名至少3个字符'
+    return
+  }
+  
+  if (!form.value.password || form.value.password.length < 6) {
+    errorMsg.value = '密码至少6个字符'
     return
   }
 
   loading.value = true
+  errorMsg.value = ''
   
   try {
-    userStore.setToken('mock-token-' + Date.now())
-    userStore.setUser({
-      id: 1,
+    const res = await registerApi({
+      username: form.value.username,
+      email: form.value.email || undefined,
+      phone: form.value.phone || undefined,
+      password: form.value.password
+    }) as any
+    const token = res.data?.access_token
+    if (!token) throw new Error('No token returned')
+
+    userStore.setToken(token)
+    userStore.setUser({ 
+      id: 1, 
       username: form.value.username,
       email: form.value.email,
       phone: form.value.phone
     })
-    
-    alert('注册成功！')
     router.push('/')
-  } catch (error) {
-    alert('注册失败，请重试')
+  } catch (error: any) {
+    errorMsg.value = error?.message || '注册失败，请重试'
   } finally {
     loading.value = false
   }
@@ -135,6 +156,14 @@ async function handleRegister() {
 
 .form-group input:focus {
   border-color: #ff6b6b;
+}
+
+.error-msg {
+  color: #e74c3c;
+  font-size: 13px;
+  padding: 8px 12px;
+  background: #fdf0ef;
+  border-radius: 6px;
 }
 
 .btn-large {

@@ -4,9 +4,11 @@ import { ref, computed } from 'vue'
 export interface User {
   id?: number
   username: string
+  nickname?: string
   email?: string
   phone?: string
   avatar?: string
+  roles?: string[]
 }
 
 export const useUserStore = defineStore('user', () => {
@@ -17,37 +19,33 @@ export const useUserStore = defineStore('user', () => {
 
   function setUser(userData: User) {
     user.value = userData
+    localStorage.setItem('user', JSON.stringify(userData))
   }
 
   function setToken(newToken: string) {
     token.value = newToken
     if (newToken) {
-      localStorage.setItem('token', newToken)
+      localStorage.setItem('access_token', newToken)
     } else {
-      localStorage.removeItem('token')
+      localStorage.removeItem('access_token')
     }
   }
 
   function logout() {
     user.value = null
     token.value = ''
-    localStorage.removeItem('token')
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('user')
   }
 
   function initFromStorage() {
-    const savedToken = localStorage.getItem('token')
-    if (savedToken) {
-      token.value = savedToken
+    const savedToken = localStorage.getItem('access_token')
+    const savedUser = localStorage.getItem('user')
+    if (savedToken) token.value = savedToken
+    if (savedUser) {
+      try { user.value = JSON.parse(savedUser) } catch { /* ignore */ }
     }
   }
 
-  return {
-    user,
-    token,
-    isLoggedIn,
-    setUser,
-    setToken,
-    logout,
-    initFromStorage
-  }
+  return { user, token, isLoggedIn, setUser, setToken, logout, initFromStorage }
 })

@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request from '@/api/request'
 
 export interface LoginParams {
   username: string
@@ -13,28 +13,22 @@ export interface RegisterParams {
 }
 
 export interface LoginResponse {
-  token: string
-  user: {
-    id: number
-    username: string
-    email?: string
-    phone?: string
-    avatar?: string
-  }
+  access_token: string
 }
 
 export function login(data: LoginParams) {
-  return request.post<LoginResponse>('/shop/auth/login', data)
+  // 路径 /auth/login → FastAPI 最终路由 /api/v1/auth/login
+  return request.post<LoginResponse>('/auth/login', data)
 }
 
 export function register(data: RegisterParams) {
-  return request.post<LoginResponse>('/shop/auth/register', data)
+  return request.post<LoginResponse>('/auth/register', data)
 }
 
 export function getUserInfo() {
-  return request.get('/shop/auth/user')
+  return request.get('/auth/userinfo')
 }
 
 export function logout() {
-  return request.post('/shop/auth/logout')
+  return request.post('/auth/logout')
 }

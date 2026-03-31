@@ -1,12 +1,17 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios'
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
 const service: AxiosInstance = axios.create({
   baseURL: 'http://localhost:8000',
   timeout: 15000,
 })
 
+// 请求拦截器：自动附加 JWT token
 service.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('access_token')
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
     return config
   },
   (error) => {
@@ -14,6 +19,7 @@ service.interceptors.request.use(
   }
 )
 
+// 响应拦截器：统一处理 401 重定向
 service.interceptors.response.use(
   (response: AxiosResponse) => {
     const res = response.data
@@ -24,6 +30,11 @@ service.interceptors.response.use(
     return res
   },
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+    }
     console.error(error.message || 'Request Error')
     return Promise.reject(error)
   }
