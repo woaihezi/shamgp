@@ -36,10 +36,11 @@ async def get_home_floors(
     db: AsyncSession = Depends(get_db),
 ):
     floors = await floor_service.get_active_floors(db)
+    product_map = await floor_service.get_floor_product_map(db)
     
     result = []
     for floor in floors:
-        product_ids = []
+        products = product_map.get(floor.id, [])
         floor_data = {
             "id": floor.id,
             "name": floor.name,
@@ -47,7 +48,7 @@ async def get_home_floors(
             "title": floor.title,
             "subtitle": floor.subtitle,
             "style": floor.style,
-            "product_ids": product_ids,
+            "products": products,
         }
         result.append(floor_data)
     

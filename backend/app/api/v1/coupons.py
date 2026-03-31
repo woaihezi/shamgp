@@ -1,66 +1,141 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-
-from app.core.database import get_db
+from sqlalchemy import select
+from datetime import datetime
+from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.coupon import Coupon
-from app.schemas.coupon import CouponCreate, CouponUpdate, CouponSchema
-from app.schemas.common import ResponseModel, ListResponseModel
-from app.api.deps import get_current_active_user
+from app.models.user_coupon import UserCoupon
 
 router = APIRouter()
 
 
-@router.get("/", response_model=ListResponseModel[dict])
-async def list_coupons(
-    status: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 20,
-    db: AsyncSession = Depends(get_db),
-):
-    """List coupons (public)"""
-    query = select(Coupon).where(Coupon.is_deleted == False, Coupon.status == "active")
-    count_q = select(func.count()).select_from(query.subquery())
-    total = (await db.execute(count_q)).scalar()
-    query = query.offset((page - 1) * page_size).limit(page_size)
-    result = await db.execute(query)
-    coupons = result.scalars().all()
-    return ListResponseModel(
-        data=[{
-            "id": c.id, "name": c.name, "code": c.code, "type": c.type,
-            "discount_value": c.discount_value, "min_order_amount": c.min_order_amount,
-            "max_discount_amount": c.max_discount_amount,
-            "start_date": str(c.start_date), "end_date": str(c.end_date),
-            "total_count": c.total_count, "used_count": c.used_count,
-        } for c in coupons],
-        total=total or 0
+@router.get("/available")
+async def get_available_coupons(db: AsyncSession = Depends(get_db)):
+    """获取当前可领取的优惠券"""
+    now = datetime.now()
+    result = await db.execute(
+        select(Coupon).where(
+            Coupon.status == 1,
+            Coupon.remain_count > 0,
+            (Coupon.start_time == None) | (Coupon.start_time <= now),
+            (Coupon.end_time == None) | (Coupon.end_time >= now)
+        ).order_by(Coupon.门槛金额)
     )
+    coupons = result.scalars().all()
+    return {"code": 200, "data": [
+        {
+            "id": c.id,
+            "name": c.name,
+            "code": c.code,
+            "type": c.type,
+            "满减金额": float(c.满减金额) if c.满减金额 else 0,
+            "折扣": float(c.折扣) if c.折扣 else None,
+            "门槛金额": float(c.门槛金额),
+            "total_count": c.total_count,
+            "remain_count": c.remain_count,
+            "per_user_limit": c.per_user_limit,
+            "start_time": c.start_time.isoformat() if c.start_time else None,
+            "end_time": c.end_time.isoformat() if c.end_time else None,
+            "description": c.description,
+        }
+        for c in coupons
+    ]}
 
 
-@router.post("/", response_model=ResponseModel[dict])
-async def create_coupon(
-    coupon_in: CouponCreate,
+@router.post("/receive/{coupon_id}")
+async def receive_coupon(
+    coupon_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user)
 ):
-    """Create coupon (admin only)"""
-    coupon = Coupon(**coupon_in.model_dump())
-    db.add(coupon)
+    """领取优惠券"""
+    result = await db.execute(select(Coupon).where(Coupon.id == coupon_id))
+    coupon = result.scalar_one_or_none()
+    if not coupon:
+        return {"code": 404, "message": "优惠券不存在"}
+
+    now = datetime.now()
+    if coupon.start_time and coupon.start_time > now:
+        return {"code": 400, "message": "优惠券尚未开始"}
+    if coupon.end_time and coupon.end_time < now:
+        return {"code": 400, "message": "优惠券已结束"}
+    if coupon.remain_count <= 0:
+        return {"code": 400, "message": "已领完"}
+
+    uc_result = await db.execute(
+        select(UserCoupon).where(
+            UserCoupon.user_id == current_user.id,
+            UserCoupon.coupon_id == coupon_id
+        )
+    )
+    existing = uc_result.scalars().all()
+    if len(existing) >= coupon.per_user_limit:
+        return {"code": 400, "message": f"您已领取过该优惠券（限领{coupon.per_user_limit}张）"}
+
+    coupon.remain_count = max(0, coupon.remain_count - 1)
+    user_coupon = UserCoupon(
+        user_id=current_user.id,
+        coupon_id=coupon_id,
+        status=0
+    )
+    db.add(user_coupon)
     await db.commit()
-    await db.refresh(coupon)
-    return ResponseModel(data={"id": coupon.id, "name": coupon.name})
+    await db.refresh(user_coupon)
+    return {"code": 200, "message": "领取成功", "data": {"id": user_coupon.id}}
 
 
-@router.post("/verify", response_model=ResponseModel[dict])
-async def verify_coupon(
-    code: str = Query(..., description="优惠券码"),
-    order_amount: float = Query(..., description="订单金额"),
+@router.get("/my")
+async def get_my_coupons(
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Verify if a coupon is valid for an order amount"""
-    from app.services.coupon_service import CouponService
-    service = CouponService(db)
-    result = await service.verify_coupon(code, order_amount)
-    return ResponseModel(data=result)
+    """获取我的优惠券"""
+    result = await db.execute(
+        select(UserCoupon, Coupon).join(Coupon).where(
+            UserCoupon.user_id == current_user.id
+        ).order_by(UserCoupon.created_at.desc())
+    )
+    rows = result.all()
+    data = []
+    for uc, c in rows:
+        data.append({
+            "id": uc.id,
+            "coupon_id": c.id,
+            "name": c.name,
+            "code": c.code,
+            "type": c.type,
+            "满减金额": float(c.满减金额) if c.满减金额 else 0,
+            "折扣": float(c.折扣) if c.折扣 else None,
+            "门槛金额": float(c.门槛金额),
+            "status": uc.status,
+            "start_time": c.start_time.isoformat() if c.start_time else None,
+            "end_time": c.end_time.isoformat() if c.end_time else None,
+        })
+    return {"code": 200, "data": data}
+
+
+@router.post("/use")
+async def use_coupon(
+    coupon_id: int,
+    order_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """使用优惠券（结算时调用）"""
+    result = await db.execute(
+        select(UserCoupon).where(
+            UserCoupon.id == coupon_id,
+            UserCoupon.user_id == current_user.id,
+            UserCoupon.status == 0
+        )
+    )
+    uc = result.scalar_one_or_none()
+    if not uc:
+        return {"code": 400, "message": "优惠券不可用"}
+
+    uc.status = 1
+    uc.used_at = datetime.now()
+    uc.order_id = order_id
+    await db.commit()
+    return {"code": 200, "message": "优惠券已使用"}
