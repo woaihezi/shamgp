@@ -131,5 +131,17 @@ export const shopProductApi = {
   getProductImages: (spuId: number, imageType?: number) =>
     request
       .get<ResponseBase<ProductImage[]>>(`/products/${spuId}/images`, { params: { imageType } })
-      .catch(() => ({ data: [] }))
+      .catch(() => ({ data: [] })),
+
+  addBrowseHistory: (productId: number) =>
+    request.post('/api/v1/products/browse', { product_id: productId }),
+
+  addFavorite: (productId: number) =>
+    request.post('/api/v1/products/favorites', { product_id: productId }),
+
+  removeFavorite: (productId: number) =>
+    request.delete(`/api/v1/products/favorites/${productId}`),
+
+  getFavorites: () =>
+    request.get('/api/v1/products/favorites'),
 }

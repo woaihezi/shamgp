@@ -44,11 +44,35 @@
       
       <div class="section">
         <h3>订单备注</h3>
-        <textarea 
-          v-model="remark" 
+        <textarea
+          v-model="remark"
           placeholder="选填，可以告诉卖家您的特殊需求"
           class="remark-input"
         ></textarea>
+      </div>
+
+      <!-- 优惠券选择 -->
+      <div class="section coupon-section" v-if="myCoupons.length > 0">
+        <h3>使用优惠券</h3>
+        <div class="coupon-select">
+          <el-select
+            v-model="selectedCouponId"
+            placeholder="选择优惠券（暂不选择）"
+            clearable
+            @change="calcDiscount"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="c in myCoupons"
+              :key="c.id"
+              :label="`${c.name}（满${c.门槛金额}减${c.满减金额}）`"
+              :value="c.id"
+            />
+          </el-select>
+        </div>
+        <div class="discount-info" v-if="discountAmount > 0">
+          已享优惠：-¥{{ discountAmount.toFixed(2) }}
+        </div>
       </div>
       
       <div class="summary">
@@ -58,11 +82,11 @@
         </div>
         <div class="summary-row">
           <span>运费</span>
-          <span>¥0.00</span>
+          <span class="freight-note">{{ freight === 0 ? '满99包邮' : `¥${freight.toFixed(2)}` }}</span>
         </div>
         <div class="summary-row total">
           <span>应付总额</span>
-          <span class="total-amount">¥{{ (cartSummary?.total_amount || 0).toFixed(2) }}</span>
+          <span class="total-amount">¥{{ totalAmount.toFixed(2) }}</span>
         </div>
       </div>
       
@@ -77,10 +101,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { cartApi, type CartSummary } from '@/api/cart'
 import { orderApi, type Address } from '@/api/order'
+import { couponApi } from '@/api/coupon'
 
 const router = useRouter()
 const loading = ref(true)
@@ -89,6 +115,65 @@ const cartSummary = ref<CartSummary | null>(null)
 const addresses = ref<Address[]>([])
 const selectedAddressId = ref<number | null>(null)
 const remark = ref('')
+
+// 优惠券相关
+const myCoupons = ref<any[]>([])
+const selectedCouponId = ref<number | null>(null)
+const discountAmount = ref(0)
+
+const loadMyCoupons = async () => {
+  try {
+    const res = await couponApi.getMyCoupons()
+    myCoupons.value = (res.data || []).filter((c: any) => c.status === 0)
+  } catch (e) {
+    // 静默失败
+  }
+}
+
+// 计算优惠金额
+const calcDiscount = () => {
+  if (!selectedCouponId.value) {
+    discountAmount.value = 0
+    return
+  }
+  const coupon = myCoupons.value.find((c: any) => c.id === selectedCouponId.value)
+  if (!coupon) return
+
+  const subtotal = cartSummary.value?.total_amount || 0
+
+  if (coupon.type === 1) {
+    // 满减
+    if (subtotal >= coupon.门槛金额) {
+      discountAmount.value = Math.min(Number(coupon.满减金额), subtotal)
+    } else {
+      discountAmount.value = 0
+      ElMessage.warning(`订单金额需满${coupon.门槛金额}元才可使用此券`)
+    }
+  } else if (coupon.type === 2) {
+    // 折扣
+    discountAmount.value = subtotal * (1 - Number(coupon.折扣))
+  } else if (coupon.type === 3) {
+    // 无门槛
+    discountAmount.value = Number(coupon.满减金额)
+  }
+}
+
+watch(selectedCouponId, () => {
+  calcDiscount()
+})
+
+// 运费计算（满99包邮，否则10元）
+const freight = computed(() => {
+  const subtotal = cartSummary.value?.total_amount || 0
+  if (subtotal >= 99) return 0
+  return 10
+})
+
+// 应付总额（纳入优惠+运费）
+const totalAmount = computed(() => {
+  const subtotal = cartSummary.value?.total_amount || 0
+  return subtotal - discountAmount.value + freight.value
+})
 
 const loadData = async () => {
   try {
@@ -115,21 +200,28 @@ const loadData = async () => {
 
 const submitOrder = async () => {
   if (!selectedAddressId.value || !cartSummary.value) return
-  
+
   try {
     submitting.value = true
     const res = await orderApi.createOrder({
       address_id: selectedAddressId.value,
       cart_item_ids: cartSummary.value.selected_items.map(i => i.id),
-      remark: remark.value
+      remark: remark.value,
+      coupon_id: selectedCouponId.value,
     })
-    
+
     if (res.code === 200) {
+      // 如果用了优惠券，标记已使用
+      if (selectedCouponId.value && res.data?.id) {
+        try {
+          await couponApi.useCoupon(selectedCouponId.value, res.data.id)
+        } catch {}
+      }
+      ElMessage.success('订单创建成功')
       router.push(`/order/detail/${res.data.id}`)
     }
-  } catch (error) {
-    console.error('Failed to create order:', error)
-    alert('提交订单失败')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '提交订单失败')
   } finally {
     submitting.value = false
   }
@@ -137,6 +229,7 @@ const submitOrder = async () => {
 
 onMounted(() => {
   loadData()
+  loadMyCoupons()
 })
 </script>
 
@@ -272,6 +365,20 @@ h2 {
 .total-amount {
   color: #ff6600;
   font-size: 24px;
+}
+.freight-note {
+  color: #999;
+  font-size: 13px;
+}
+.coupon-section {
+  .coupon-select {
+    margin-bottom: 8px;
+  }
+  .discount-info {
+    color: #ff6600;
+    font-size: 14px;
+    font-weight: 500;
+  }
 }
 .actions {
   display: flex;

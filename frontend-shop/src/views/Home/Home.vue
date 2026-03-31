@@ -18,16 +18,16 @@
           <div class="coupon-left">
             <div class="coupon-value">
               <span class="symbol">¥</span>
-              <span class="amount">{{ coupon.discount_value }}</span>
+              <span class="amount">{{ coupon.满减金额 }}</span>
             </div>
-            <div class="coupon-condition" v-if="coupon.min_amount > 0">
-              满{{ coupon.min_amount }}元可用
+            <div class="coupon-condition" v-if="coupon.门槛金额 > 0">
+              满{{ coupon.门槛金额 }}元可用
             </div>
           </div>
           <div class="coupon-right">
             <div class="coupon-name">{{ coupon.name }}</div>
             <div class="coupon-time">
-              {{ coupon.valid_start_time }} ~ {{ coupon.valid_end_time }}
+              {{ coupon.start_time || '领取后生效' }} ~ {{ coupon.end_time || '永久有效' }}
             </div>
             <el-button type="primary" size="small" @click="handleReceiveCoupon(coupon.id)">
               立即领取
@@ -41,12 +41,24 @@
       <h2 class="section-title">{{ floor.title || floor.name }}</h2>
       <p v-if="floor.subtitle" class="section-subtitle">{{ floor.subtitle }}</p>
       <div class="product-list">
-        <div class="product-item" v-for="i in 4" :key="i">
+        <div
+          class="product-item"
+          v-for="product in floor.products || []"
+          :key="product.product_id"
+        >
           <div class="product-image">
-            <img :src="`https://picsum.photos/200/200?random=${floor.id}${i}`" alt="商品图片" />
+            <img
+              :src="product.cover_image || 'https://picsum.photos/200/200'"
+              :alt="product.name"
+            />
           </div>
-          <div class="product-name">示例商品 {{ floor.id }}-{{ i }}</div>
-          <div class="product-price">¥{{ (Math.random() * 100 + 10).toFixed(2) }}</div>
+          <div class="product-name">{{ product.name }}</div>
+          <div class="product-price-row">
+            <span class="current-price">¥{{ product.price.toFixed(2) }}</span>
+            <span v-if="product.original_price" class="original-price">
+              ¥{{ product.original_price.toFixed(2) }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -79,11 +91,11 @@ const fetchHomeData = async () => {
 
 const handleReceiveCoupon = async (couponId: number) => {
   try {
-    await couponApi.receiveCoupon(couponId, 1)
+    await couponApi.receive(couponId)
     ElMessage.success('领取成功')
     fetchHomeData()
-  } catch (error) {
-    ElMessage.error('领取失败')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '领取失败')
   }
 }
 
@@ -245,5 +257,24 @@ onMounted(() => {
   font-size: 18px;
   font-weight: bold;
   color: #ff4d4f;
+}
+
+.product-price-row {
+  padding: 0 16px 16px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.current-price {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff4d4f;
+}
+
+.original-price {
+  font-size: 12px;
+  color: #999;
+  text-decoration: line-through;
 }
 </style>

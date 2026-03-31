@@ -32,6 +32,15 @@ export interface Coupon {
   updated_at: string
 }
 
+export interface FloorProduct {
+  product_id: number
+  sort: number
+  cover_image?: string
+  price: number
+  original_price?: number
+  name: string
+}
+
 export interface Floor {
   id: number
   name: string
@@ -41,6 +50,7 @@ export interface Floor {
   sort: number
   status: number
   style: number
+  products: FloorProduct[]
   created_at: string
   updated_at: string
 }
