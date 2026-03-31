@@ -1,0 +1,6 @@
+$token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwiZXhwIjoxNzc1NTUxNTIwfQ.hJJQy7GrK2G2Vu02aer3uUjZUnb7FCR2U0NYhsAWMnE"
+Write-Host "=== Test 5: POST /api/v1/carts/items ==="
+curl.exe -s http://localhost:8000/api/v1/carts/items -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $token" -d "@C:\Users\Make\Desktop\shamgp\backend\test-cart.json"
+Write-Host ""
+Write-Host "=== Test 6: GET /api/v1/carts/items ==="
+curl.exe -s http://localhost:8000/api/v1/carts/items -H "Authorization: Bearer $token"
