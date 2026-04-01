@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from .base import BaseService
 from ..models import InventoryRecord
 from ..schemas import InventoryRecordCreate, InventoryRecordUpdate

@@ -1,10 +1,14 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from ...schemas import (
     InventoryRecord, InventoryRecordCreate, InventoryRecordUpdate,
     ResponseBase
 )
 from ...services import inventory_service
+from ...core.database import get_db
+from ...api.deps import get_current_active_user
+from ...models.user import User
 
 router = APIRouter(prefix="/inventory", tags=["库存管理"])
 

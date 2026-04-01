@@ -11,6 +11,8 @@ from ...schemas.system_config import (
     SystemConfigQuery
 )
 from ...services.system_config_service import SystemConfigService
+from ...api.deps import get_current_active_user
+from ...models.user import User
 
 router = APIRouter(prefix="/system-config", tags=["系统配置"])
 
