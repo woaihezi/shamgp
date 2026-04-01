@@ -24,12 +24,12 @@
 
 ### 后端 (backend)
 - FastAPI
-- SQLAlchemy
+- SQLAlchemy 2.0
 - JWT
-- Pydantic
+- Pydantic 2
 
 ### 数据库
-- MySQL / PostgreSQL
+- SQLite (默认开发环境)
 
 ## 项目结构
 
@@ -39,11 +39,8 @@ shamgp/
 ├── frontend-shop/        # 前端商城
 ├── backend/              # 后端 API
 ├── docs/                 # 文档
-├── sql/                  # SQL 脚本
 ├── scripts/              # 脚本文件
-├── docker/               # Docker 配置
 ├── .env.example          # 环境变量示例
-├── docker-compose.yml    # Docker Compose 配置
 └── README.md             # 项目说明
 ```
 
@@ -53,7 +50,6 @@ shamgp/
 
 - Node.js 18+
 - Python 3.10+
-- Docker (可选)
 
 ### 1. 克隆项目
 
@@ -62,23 +58,14 @@ git clone <repository-url>
 cd shamgp
 ```
 
-### 2. 配置环境变量
+### 2. 启动后端
 
-```bash
-cp .env.example .env
-# 编辑 .env 文件，填入必要的配置
-```
-
-### 3. 启动数据库 (使用 Docker)
-
-```bash
-docker-compose up -d mysql
-```
-
-### 4. 启动后端
+**注意：docker-compose.yml 只负责数据库，本项目默认使用 SQLite，无需额外启动数据库**
 
 ```bash
 cd backend
+
+# 创建虚拟环境
 python -m venv venv
 
 # Windows
@@ -86,13 +73,22 @@ venv\Scripts\activate
 # Linux/Mac
 source venv/bin/activate
 
+# 安装依赖
 pip install -r requirements.txt
+
+# 初始化数据库
+python scripts/init_db.py
+
+# 导入种子数据
+python scripts/seed_data.py
+
+# 启动服务
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 后端 API 文档: http://localhost:8000/docs
 
-### 5. 启动管理后台
+### 3. 启动管理后台
 
 ```bash
 cd frontend-admin
@@ -102,7 +98,11 @@ npm run dev
 
 访问: http://localhost:3000
 
-### 6. 启动前端商城
+**默认账号**:
+- 用户名: `admin`
+- 密码: `admin123`
+
+### 4. 启动前端商城
 
 ```bash
 cd frontend-shop
@@ -112,21 +112,36 @@ npm run dev
 
 访问: http://localhost:3001
 
-## 使用 Docker Compose 启动
+**默认测试账号**:
+- 用户名: `testuser`
+- 密码: `user123`
 
-```bash
-# 启动所有服务
-docker-compose up -d
+或使用注册功能创建新账号
 
-# 查看服务状态
-docker-compose ps
+## 当前已验证功能
 
-# 查看日志
-docker-compose logs -f
+✅ **后端核心链路**:
+- 用户注册/登录（JWT）
+- 商品列表（简单商品）
+- 购物车（加购、摘要、列表）
+- 收货地址管理
+- 订单创建
+- 产品级库存扣减
 
-# 停止服务
-docker-compose down
-```
+✅ **管理后台**:
+- 登录
+- Dashboard（需要登录鉴权）
+
+✅ **前端商城**:
+- API 路径修复（无重复前缀）
+
+## 当前已知限制
+
+1. **SKU 库存链路**：仅验证了产品级库存扣减，未验证 SKU 级库存扣减
+2. **后台权限**：仅添加了登录鉴权，未细分权限级别
+3. **商品列表页**：搜索和分类过滤功能需要完善
+4. **支付功能**：未实现
+5. **订单状态流转**：仅创建订单，未实现支付、发货、收货等状态
 
 ## 开发指南
 

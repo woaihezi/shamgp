@@ -42,20 +42,23 @@ import type { ProductSpu } from '@/api/product'
 const route = useRoute()
 const keyword = ref('')
 const products = ref<ProductSpu[]>([])
+const loading = ref(false)
 
+// 当前行为：前端过滤（非服务端分页）
+// 后续可优化为服务端分页 + 搜索
 const filteredProducts = computed(() => {
   let result = [...products.value]
   
   if (route.query.categoryId) {
     const categoryId = Number(route.query.categoryId)
-    result = result.filter(p => (p as any).categoryId === categoryId)
+    result = result.filter(p => (p as any).category_id === categoryId || (p as any).categoryId === categoryId)
   }
   
   if (keyword.value) {
     const kw = keyword.value.toLowerCase()
     result = result.filter(p => 
       p.name.toLowerCase().includes(kw) || 
-      (p.description && p.description.toLowerCase().includes(kw))
+      ((p as any).description && (p as any).description.toLowerCase().includes(kw))
     )
   }
   
@@ -68,16 +71,26 @@ onMounted(() => {
 
 async function loadProducts() {
   try {
-    const res: any = await shopProductApi.getProducts({ page: 1, pageSize: 50 })
+    loading.value = true
+    const categoryId = route.query.categoryId ? Number(route.query.categoryId) : undefined
+    const res: any = await shopProductApi.getProducts({ 
+      page: 1, 
+      pageSize: 50,
+      categoryId: categoryId,
+      keyword: keyword.value || undefined
+    })
     if (res.code === 200) {
       products.value = res.data?.items || res.data || []
     }
   } catch (e) {
     console.error('加载商品失败', e)
+  } finally {
+    loading.value = false
   }
 }
 
 function handleSearch() {
+  loadProducts()
 }
 </script>
 
