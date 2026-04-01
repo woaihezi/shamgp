@@ -1,7 +1,5 @@
 import request from './request'
 
-const BASE_URL = '/api/v1/shop'
-
 export interface Banner {
   id: number
   title: string
@@ -63,24 +61,27 @@ export interface ApiResponse<T> {
 
 export const homeApi = {
   getBanners: (platform?: number) => {
-    return request.get<ApiResponse<Banner[]>>(`${BASE_URL}/home/banners`, { params: { platform } })
+    return request.get<ApiResponse<Banner[]>>('/shop/home/banners', { params: { platform } })
   },
   getAvailableCoupons: () => {
-    return request.get<ApiResponse<Coupon[]>>(`${BASE_URL}/home/coupons/available`)
+    return request.get<ApiResponse<Coupon[]>>('/shop/home/coupons/available')
   },
   getFloors: () => {
-    return request.get<ApiResponse<any[]>>(`${BASE_URL}/home/floors`)
+    return request.get<ApiResponse<any[]>>('/shop/home/floors')
   },
   getHomeConfig: (platform?: number) => {
-    return request.get<ApiResponse<{ banners: Banner[]; floors: Floor[] }>>(`${BASE_URL}/home/config`, { params: { platform } })
+    return request.get<ApiResponse<{ banners: Banner[]; floors: Floor[] }>>('/shop/home/config', { params: { platform } })
   },
 }
 
 export const couponApi = {
   getAvailableCoupons: () => {
-    return request.get<ApiResponse<Coupon[]>>(`${BASE_URL}/coupons/available`)
+    return request.get<ApiResponse<Coupon[]>>('/shop/coupons/available')
   },
-  receiveCoupon: (couponId: number, userId: number) => {
-    return request.post<ApiResponse<any>>(`${BASE_URL}/coupons/receive`, { coupon_id: couponId }, { params: { user_id: userId } })
+  receiveCoupon: (couponId: number) => {
+    return request.post<ApiResponse<any>>('/shop/coupons/receive', { coupon_id: couponId })
+  },
+  getMyCoupons: () => {
+    return request.get<ApiResponse<Coupon[]>>('/shop/coupons/my')
   },
 }

@@ -33,10 +33,10 @@ export interface UpdateCartItemParams {
 }
 
 export const cartApi = {
-  getSummary: () => request.get<{ code: number; data: CartSummary }>('/api/v1/carts/summary'),
-  getItems: () => request.get<{ code: number; data: CartItem[] }>('/api/v1/carts/items'),
-  addItem: (data: AddCartItemParams) => request.post<{ code: number; data: CartItem }>('/api/v1/carts/items', data),
-  updateItem: (id: number, data: UpdateCartItemParams) => request.put<{ code: number; data: CartItem }>(`/api/v1/carts/items/${id}`, data),
-  removeItem: (id: number) => request.delete<{ code: number }>(`/api/v1/carts/items/${id}`),
-  clearCart: () => request.delete<{ code: number }>('/api/v1/carts/clear')
+  getSummary: () => request.get<{ code: number; data: CartSummary }>('/carts/summary'),
+  getItems: () => request.get<{ code: number; data: CartItem[] }>('/carts/items'),
+  addItem: (data: AddCartItemParams) => request.post<{ code: number; data: CartItem }>('/carts/items', data),
+  updateItem: (id: number, data: UpdateCartItemParams) => request.put<{ code: number; data: CartItem }>(`/carts/items/${id}`, data),
+  removeItem: (id: number) => request.delete<{ code: number }>(`/carts/items/${id}`),
+  clearCart: () => request.delete<{ code: number }>('/carts/clear')
 }

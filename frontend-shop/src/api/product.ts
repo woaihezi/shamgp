@@ -1,4 +1,4 @@
-﻿import request from '@/utils/request'
+import request from '@/utils/request'
 
 export interface Category {
   id?: number
@@ -134,14 +134,14 @@ export const shopProductApi = {
       .catch(() => ({ data: [] })),
 
   addBrowseHistory: (productId: number) =>
-    request.post('/api/v1/products/browse', { product_id: productId }),
+    request.post('/products/browse', { product_id: productId }),
 
   addFavorite: (productId: number) =>
-    request.post('/api/v1/products/favorites', { product_id: productId }),
+    request.post('/products/favorites', { product_id: productId }),
 
   removeFavorite: (productId: number) =>
-    request.delete(`/api/v1/products/favorites/${productId}`),
+    request.delete(`/products/favorites/${productId}`),
 
   getFavorites: () =>
-    request.get('/api/v1/products/favorites'),
+    request.get('/products/favorites'),
 }

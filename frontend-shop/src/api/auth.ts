@@ -17,17 +17,17 @@ export interface LoginResponse {
 }
 
 export function login(data: LoginParams) {
-  return request.post<LoginResponse>('/api/v1/auth/login', data)
+  return request.post<LoginResponse>('/auth/login', data)
 }
 
 export function register(data: RegisterParams) {
-  return request.post<LoginResponse>('/api/v1/auth/register', data)
+  return request.post<LoginResponse>('/auth/register', data)
 }
 
 export function getUserInfo() {
-  return request.get('/api/v1/auth/userinfo')
+  return request.get('/auth/userinfo')
 }
 
 export function logout() {
-  return request.post('/api/v1/auth/logout')
+  return request.post('/auth/logout')
 }

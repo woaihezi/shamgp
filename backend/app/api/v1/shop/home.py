@@ -11,7 +11,7 @@ from app.services.banner_service import banner_service
 from app.services.coupon_service import coupon_service
 from app.services.recommend_service import floor_service, ad_service, ad_space_service
 
-router = APIRouter(prefix="/home", tags=["shop-home"])
+router = APIRouter(tags=["shop-home"])
 
 
 @router.get("/banners", response_model=ResponseModel[list[Banner]])

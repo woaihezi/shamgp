@@ -1,7 +1,11 @@
 from importlib import import_module
 from fastapi import APIRouter
+import os
 
 api_router = APIRouter()
+
+# 严格模式：开发环境下路由导入失败时抛出异常
+STRICT_MODE = os.getenv("API_STRICT_MODE", "true").lower() == "true"
 
 
 def _include_router(module_path: str, prefix: str, tags: list[str]) -> None:
@@ -10,8 +14,17 @@ def _include_router(module_path: str, prefix: str, tags: list[str]) -> None:
         router = getattr(module, "router", None)
         if router is not None:
             api_router.include_router(router, prefix=prefix, tags=tags)
+            print(f"[router-loaded] {module_path}")
+        else:
+            print(f"[router-warning] {module_path}: No 'router' attribute found")
+            if STRICT_MODE:
+                raise RuntimeError(f"Module {module_path} has no 'router' attribute")
     except Exception as exc:
-        print(f"[router-skip] {module_path}: {exc}")
+        print(f"[router-error] {module_path}: {type(exc).__name__}: {exc}")
+        import traceback
+        traceback.print_exc()
+        if STRICT_MODE:
+            raise
 
 
 _include_router("app.api.v1.auth", "/auth", ["auth"])

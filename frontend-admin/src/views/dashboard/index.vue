@@ -123,18 +123,13 @@ const formatTime = (time: string) => {
 // 获取统计数据
 const loadStats = async () => {
   try {
-    const token = localStorage.getItem('token')
-    if (!token) return
-
-    const res: any = await request.get('/admin/stats', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const res: any = await request.get('/dashboard/stats')
 
     if (res.code === 200 && res.data) {
       stats.value = res.data
     }
-  } catch {
-    // API 不可用时使用 mock 数据（已设置默认值）
+  } catch (err) {
+    console.error('Failed to load stats:', err)
     loadFailed.value = true
   }
 }
@@ -143,20 +138,16 @@ const loadStats = async () => {
 const loadRecentOrders = async () => {
   try {
     tableLoading.value = true
-    const token = localStorage.getItem('token')
-    if (!token) return
-
     const res: any = await request.get('/orders/admin/', {
-      headers: { Authorization: `Bearer ${token}` },
       params: { page: 1, page_size: 5 }
     })
 
     if (res.code === 200) {
       recentOrders.value = Array.isArray(res.data) ? res.data : (res.data?.list || [])
     }
-  } catch {
-    // API 不可用时使用 mock 数据
-    recentOrders.value = getMockRecentOrders()
+  } catch (err) {
+    console.error('Failed to load recent orders:', err)
+    loadFailed.value = true
   } finally {
     tableLoading.value = false
   }

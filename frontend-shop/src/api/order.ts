@@ -80,26 +80,26 @@ export interface Refund {
 }
 
 export const orderApi = {
-  getAddresses: () => request.get<{ code: number; data: Address[] }>('/api/v1/orders/addresses'),
-  getDefaultAddress: () => request.get<{ code: number; data: Address }>('/api/v1/orders/addresses/default'),
+  getAddresses: () => request.get<{ code: number; data: Address[] }>('/orders/addresses'),
+  getDefaultAddress: () => request.get<{ code: number; data: Address }>('/orders/addresses/default'),
   createAddress: (data: Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => 
-    request.post<{ code: number; data: Address }>('/api/v1/orders/addresses', data),
+    request.post<{ code: number; data: Address }>('/orders/addresses', data),
   updateAddress: (id: number, data: Partial<Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => 
-    request.put<{ code: number; data: Address }>(`/api/v1/orders/addresses/${id}`, data),
-  deleteAddress: (id: number) => request.delete<{ code: number }>(`/api/v1/orders/addresses/${id}`),
+    request.put<{ code: number; data: Address }>(`/orders/addresses/${id}`, data),
+  deleteAddress: (id: number) => request.delete<{ code: number }>(`/orders/addresses/${id}`),
   
-  createOrder: (data: CreateOrderParams) => request.post<{ code: number; data: Order }>('/api/v1/orders/', data),
+  createOrder: (data: CreateOrderParams) => request.post<{ code: number; data: Order }>('/orders/', data),
   getOrders: (params?: { status?: string; page?: number; page_size?: number }) => 
-    request.get<{ code: number; data: Order[]; total: number }>('/api/v1/orders/', { params }),
-  getOrder: (id: number) => request.get<{ code: number; data: Order }>(`/api/v1/orders/${id}`),
+    request.get<{ code: number; data: Order[]; total: number }>('/orders/', { params }),
+  getOrder: (id: number) => request.get<{ code: number; data: Order }>(`/orders/${id}`),
   cancelOrder: (id: number, cancel_reason: string) => 
-    request.post<{ code: number; data: Order }>(`/api/v1/orders/${id}/cancel`, null, { params: { cancel_reason } }),
+    request.post<{ code: number; data: Order }>(`/orders/${id}/cancel`, null, { params: { cancel_reason } }),
   updateOrderStatus: (id: number, status: string) => 
-    request.put<{ code: number; data: Order }>(`/api/v1/orders/${id}/status`, { status }),
+    request.put<{ code: number; data: Order }>(`/orders/${id}/status`, { status }),
   
   getRefunds: (params?: { order_id?: number }) => 
-    request.get<{ code: number; data: Refund[] }>('/api/v1/orders/refunds', { params }),
-  getRefund: (id: number) => request.get<{ code: number; data: Refund }>(`/api/v1/orders/refunds/${id}`),
+    request.get<{ code: number; data: Refund[] }>('/orders/refunds', { params }),
+  getRefund: (id: number) => request.get<{ code: number; data: Refund }>(`/orders/refunds/${id}`),
   createRefund: (data: Omit<Refund, 'id' | 'refund_no' | 'user_id' | 'created_at' | 'updated_at' | 'status' | 'audit_time' | 'audit_user_id' | 'audit_remark' | 'refund_time'>) => 
-    request.post<{ code: number; data: Refund }>('/api/v1/orders/refunds', data)
+    request.post<{ code: number; data: Refund }>('/orders/refunds', data)
 }
