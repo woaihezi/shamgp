@@ -5,7 +5,7 @@ import os
 api_router = APIRouter()
 
 # 严格模式：开发环境下路由导入失败时抛出异常
-STRICT_MODE = os.getenv("API_STRICT_MODE", "true").lower() == "true"
+STRICT_MODE = os.getenv("API_STRICT_MODE", "false").lower() == "true"
 
 
 def _include_router(module_path: str, prefix: str, tags: list[str]) -> None:

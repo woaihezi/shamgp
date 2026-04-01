@@ -8,7 +8,8 @@ import string
 from ..models.order import Order, OrderItem, Refund, OrderStatus, PayStatus
 from ..models.cart import CartItem
 from ..models.address import Address
-from ..models.product import Product, ProductSku
+from ..models.product import Product
+from ..models.product_sku import ProductSku
 from ..schemas.order import OrderCreate, OrderUpdate, OrderSchema, OrderItemSchema, RefundCreate, RefundSchema
 from .address_service import AddressService
 from .cart_service import CartService
