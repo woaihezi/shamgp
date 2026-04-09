@@ -62,6 +62,12 @@ cd shamgp
 
 **注意：docker-compose.yml 只负责数据库，本项目默认使用 SQLite，无需额外启动数据库**
 
+#### 安全配置（P0 必做）
+
+- 必须在 `.env` 中设置强随机 `SECRET_KEY`（至少 32 位）。
+- `CORS_ORIGINS` 必须是明确域名白名单，禁止使用 `*`。
+- 若需要跨域携带凭据（Cookie/Authorization），`CORS_ALLOW_CREDENTIALS=true` 时同样不能使用 `*`。
+
 ```bash
 cd backend
 
