@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 
@@ -13,7 +13,7 @@ from app.schemas.recommend import (
 from .base import BaseService
 
 
-class AdSpaceService(BaseService[AdSpace]):
+class AdSpaceService(BaseService[AdSpace, AdSpaceCreate, AdSpaceUpdate]):
     def __init__(self):
         super().__init__(AdSpace)
 
@@ -40,7 +40,7 @@ class AdSpaceService(BaseService[AdSpace]):
         return result.scalar_one_or_none()
 
 
-class AdService(BaseService[Ad]):
+class AdService(BaseService[Ad, AdCreate, AdUpdate]):
     def __init__(self):
         super().__init__(Ad)
 
@@ -65,7 +65,7 @@ class AdService(BaseService[Ad]):
         return items, total
 
     async def get_active_ads(self, db: AsyncSession, ad_space_id: int) -> List[Ad]:
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         query = select(Ad).where(
             and_(
                 Ad.ad_space_id == ad_space_id,
@@ -86,7 +86,7 @@ class AdService(BaseService[Ad]):
         return ad
 
 
-class FloorService(BaseService[Floor]):
+class FloorService(BaseService[Floor, FloorCreate, FloorUpdate]):
     def __init__(self):
         super().__init__(Floor)
 
@@ -157,7 +157,7 @@ class FloorService(BaseService[Floor]):
         return result
 
 
-class FloorProductService(BaseService[FloorProduct]):
+class FloorProductService(BaseService[FloorProduct, FloorProductCreate, FloorProductUpdate]):
     def __init__(self):
         super().__init__(FloorProduct)
 

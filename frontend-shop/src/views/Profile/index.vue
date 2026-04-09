@@ -32,14 +32,14 @@
                 <span>购物车</span>
                 <span class="menu-arrow">&rarr;</span>
               </router-link>
+              <router-link to="/addresses" class="menu-item">
+                <span class="menu-icon">📍</span>
+                <span>收货地址</span>
+                <span class="menu-arrow">&rarr;</span>
+              </router-link>
               <div class="menu-item">
                 <span class="menu-icon">⚙️</span>
                 <span>账户设置</span>
-                <span class="menu-arrow">&rarr;</span>
-              </div>
-              <div class="menu-item">
-                <span class="menu-icon">📍</span>
-                <span>收货地址</span>
                 <span class="menu-arrow">&rarr;</span>
               </div>
             </div>

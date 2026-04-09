@@ -43,6 +43,44 @@ const routes: RouteRecordRaw[] = [
         component: () => import("@/views/permissions/index.vue"),
         meta: { title: "权限管理" },
       },
+      {
+        path: "marketing",
+        name: "Marketing",
+        meta: { title: "营销管理" },
+        children: [
+          {
+            path: "banners",
+            name: "Banners",
+            component: () => import("@/views/marketing/Banner.vue"),
+            meta: { title: "轮播图管理" },
+          },
+          {
+            path: "coupons",
+            name: "Coupons",
+            component: () => import("@/views/marketing/Coupon.vue"),
+            meta: { title: "优惠券管理" },
+          },
+        ],
+      },
+      {
+        path: "logs",
+        name: "Logs",
+        meta: { title: "系统日志" },
+        children: [
+          {
+            path: "operation",
+            name: "OperationLogs",
+            component: () => import("@/views/logs/OperationLog.vue"),
+            meta: { title: "操作日志" },
+          },
+          {
+            path: "login",
+            name: "LoginLogs",
+            component: () => import("@/views/logs/LoginLog.vue"),
+            meta: { title: "登录日志" },
+          },
+        ],
+      },
     ],
   },
 ];

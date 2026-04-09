@@ -68,8 +68,19 @@ class OrderSchema(BaseSchema):
     items: List[OrderItemSchema] = []
 
 
+class OrderStatusLogSchema(BaseModel):
+    id: int
+    order_id: int
+    old_status: Optional[str] = None
+    new_status: str
+    operator_type: str
+    operator_id: Optional[int] = None
+    remark: Optional[str] = None
+    created_at: datetime
+
+
 class OrderDetailSchema(OrderSchema):
-    pass
+    status_logs: List[OrderStatusLogSchema] = []
 
 
 class RefundBase(BaseModel):

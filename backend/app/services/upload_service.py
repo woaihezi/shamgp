@@ -4,7 +4,7 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, desc
+from sqlalchemy import select, and_, desc, func
 from fastapi import UploadFile
 from ..models.file import File
 from ..schemas.file import (

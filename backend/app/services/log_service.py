@@ -1,7 +1,7 @@
 
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, desc
+from sqlalchemy import select, and_, desc, func
 from ..models.log import OperationLog, LoginLog
 from ..schemas.log import (
     OperationLogCreate,

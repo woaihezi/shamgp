@@ -7,7 +7,7 @@ from app.schemas.banner import BannerCreate, BannerUpdate
 from .base import BaseService
 
 
-class BannerService(BaseService[Banner]):
+class BannerService(BaseService[Banner, BannerCreate, BannerUpdate]):
     def __init__(self):
         super().__init__(Banner)
 

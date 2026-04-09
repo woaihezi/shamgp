@@ -3,14 +3,43 @@
     <Header />
     <main class="main-content">
       <div class="container">
-        <section class="banner-section">
-          <div class="banner">
-            <h1>欢迎来到商城</h1>
-            <p>品质购物，从这里开始</p>
+        <!-- 轮播图 -->
+        <section class="banner-section" v-if="banners.length > 0">
+          <div class="banner-slider">
+            <div class="banner-item" v-for="banner in banners" :key="banner.id">
+              <a :href="banner.link_url" target="_blank">
+                <img :src="banner.image_url" :alt="banner.title" class="banner-image" />
+              </a>
+            </div>
           </div>
         </section>
 
-        <section class="section">
+        <!-- 楼层商品 -->
+        <section v-for="floor in floors" :key="floor.id" class="section">
+          <div class="section-header">
+            <h2>{{ floor.name }}</h2>
+            <router-link to="/products" class="more-link">查看更多 &rarr;</router-link>
+          </div>
+          <div class="product-grid">
+            <div v-for="product in floor.products" :key="product.product_id" class="product-card">
+              <router-link :to="`/product/${product.product_id}`" class="product-link">
+                <div class="product-image">
+                  <img :src="product.cover_image" :alt="product.name" />
+                </div>
+                <div class="product-info">
+                  <h3 class="product-name">{{ product.name }}</h3>
+                  <div class="product-price">
+                    <span class="price">¥{{ product.price.toFixed(2) }}</span>
+                    <span v-if="product.original_price" class="original-price">¥{{ product.original_price.toFixed(2) }}</span>
+                  </div>
+                </div>
+              </router-link>
+            </div>
+          </div>
+        </section>
+
+        <!-- 热门商品 -->
+        <section class="section" v-if="hotProducts.length > 0">
           <div class="section-header">
             <h2>热门商品</h2>
             <router-link to="/products" class="more-link">查看更多 &rarr;</router-link>
@@ -20,14 +49,10 @@
           </div>
         </section>
 
-        <section class="section">
-          <div class="section-header">
-            <h2>新品推荐</h2>
-          </div>
-          <div class="product-grid">
-            <ProductCard v-for="product in newProducts" :key="product.id" :product="product" />
-          </div>
-        </section>
+        <!-- 加载状态 -->
+        <div v-if="loading" class="loading-state">
+          <p>加载中...</p>
+        </div>
       </div>
     </main>
     <Footer />
@@ -39,92 +64,40 @@ import { ref, onMounted } from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import ProductCard from '@/components/ProductCard.vue'
-import type { Product } from '@/api/product'
+import { homeApi } from '@/api/home'
+import { shopProductApi } from '@/api/product'
+import type { Banner, Floor } from '@/api/home'
+import type { ProductSpu } from '@/api/product'
 
-const hotProducts = ref<Product[]>([])
-const newProducts = ref<Product[]>([])
+const loading = ref(true)
+const banners = ref<Banner[]>([])
+const floors = ref<Floor[]>([])
+const hotProducts = ref<ProductSpu[]>([])
 
 onMounted(() => {
-  loadMockProducts()
+  loadHomeData()
 })
 
-function loadMockProducts() {
-  const mockProducts: Product[] = [
-    {
-      id: 1,
-      name: 'iPhone 15 Pro Max',
-      description: '苹果最新旗舰手机，钛金属设计，A17 Pro芯片',
-      price: 9999,
-      stock: 100,
-      categoryId: 1,
-      image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=iPhone%2015%20Pro%20Max%20smartphone&image_size=square_hd',
-      status: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 2,
-      name: 'MacBook Pro 14英寸',
-      description: 'M3 Pro芯片，18小时续航，Liquid Retina XDR显示屏',
-      price: 14999,
-      stock: 50,
-      categoryId: 2,
-      image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MacBook%20Pro%20laptop&image_size=square_hd',
-      status: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 3,
-      name: 'AirPods Pro 2',
-      description: '主动降噪，自适应通透模式，空间音频',
-      price: 1899,
-      stock: 200,
-      categoryId: 3,
-      image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=AirPods%20Pro%20wireless%20earbuds&image_size=square_hd',
-      status: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 4,
-      name: 'iPad Pro 12.9英寸',
-      description: 'M2芯片，Liquid Retina XDR显示屏，Apple Pencil支持',
-      price: 8999,
-      stock: 80,
-      categoryId: 1,
-      image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=iPad%20Pro%20tablet&image_size=square_hd',
-      status: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 5,
-      name: 'Apple Watch Ultra 2',
-      description: '钛金属表壳，S9芯片，双频GPS，100米防水',
-      price: 6499,
-      stock: 60,
-      categoryId: 3,
-      image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Apple%20Watch%20smartwatch&image_size=square_hd',
-      status: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 6,
-      name: 'Magic Keyboard',
-      description: '无线蓝牙键盘，背光按键，适配Mac和iPad',
-      price: 999,
-      stock: 150,
-      categoryId: 2,
-      image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=wireless%20keyboard&image_size=square_hd',
-      status: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+async function loadHomeData() {
+  loading.value = true
+  try {
+    // 加载首页配置（轮播图和楼层）
+    const homeRes = await homeApi.getHomeConfig()
+    if (homeRes.code === 200) {
+      banners.value = homeRes.data?.banners || []
+      floors.value = homeRes.data?.floors || []
     }
-  ]
-  hotProducts.value = mockProducts.slice(0, 4)
-  newProducts.value = mockProducts.slice(2, 6)
+
+    // 加载热门商品
+    const productRes = await shopProductApi.getProducts({ page: 1, pageSize: 8 })
+    if (productRes.code === 200) {
+      hotProducts.value = productRes.data?.items || []
+    }
+  } catch (error) {
+    console.error('加载首页数据失败', error)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -144,22 +117,23 @@ function loadMockProducts() {
   margin-bottom: 40px;
 }
 
-.banner {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
-  color: white;
-  padding: 80px 40px;
+.banner-slider {
+  position: relative;
   border-radius: 12px;
-  text-align: center;
+  overflow: hidden;
+  height: 400px;
 }
 
-.banner h1 {
-  font-size: 36px;
-  margin-bottom: 12px;
+.banner-item {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
-.banner p {
-  font-size: 18px;
-  opacity: 0.9;
+.banner-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .section {
@@ -192,5 +166,110 @@ function loadMockProducts() {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
+}
+
+.product-card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.product-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.product-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.product-card:hover .product-image img {
+  transform: scale(1.05);
+}
+
+.product-info {
+  padding: 16px;
+}
+
+.product-name {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.product-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff6b6b;
+}
+
+.original-price {
+  font-size: 14px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 80px 0;
+  color: #666;
+  font-size: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .banner-slider {
+    height: 250px;
+  }
+  
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+  }
+  
+  .product-image {
+    height: 120px;
+  }
+  
+  .product-info {
+    padding: 12px;
+  }
+  
+  .product-name {
+    font-size: 14px;
+  }
+  
+  .price {
+    font-size: 16px;
+  }
 }
 </style>

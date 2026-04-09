@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     BACKEND_HOST: str = "0.0.0.0"
     BACKEND_PORT: int = 8000
     
+    UPLOAD_DIR: str = "uploads"
+    ALLOWED_EXTENSIONS: set = {"jpg", "jpeg", "png", "gif", "pdf", "doc", "docx", "xls", "xlsx"}
+    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

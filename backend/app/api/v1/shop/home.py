@@ -62,9 +62,24 @@ async def get_home_config(
 ):
     banners = await banner_service.get_active_banners(db, platform=platform)
     floors = await floor_service.get_active_floors(db)
+    product_map = await floor_service.get_floor_product_map(db)
+    
+    floor_list = []
+    for floor in floors:
+        products = product_map.get(floor.id, [])
+        floor_data = {
+            "id": floor.id,
+            "name": floor.name,
+            "code": floor.code,
+            "title": floor.title,
+            "subtitle": floor.subtitle,
+            "style": floor.style,
+            "products": products,
+        }
+        floor_list.append(floor_data)
     
     config = {
         "banners": banners,
-        "floors": floors,
+        "floors": floor_list,
     }
     return ResponseModel(data=config)

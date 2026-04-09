@@ -73,3 +73,12 @@ export const getUserGrowth = (days: number = 7) =&gt; {
 export const getOrderStats = () =&gt; {
   return request.get&lt;ApiResponse&lt;OrderStatsResponse&gt;&gt;('/dashboard/order-stats')
 }
+
+export const logApi = {
+  getOperationLogs: (params?: any) =&gt; {
+    return request.get&lt;ApiResponse&lt;any&gt;&gt;('/logs/operation', { params })
+  },
+  getLoginLogs: (params?: any) =&gt; {
+    return request.get&lt;ApiResponse&lt;any&gt;&gt;('/logs/login', { params })
+  },
+}

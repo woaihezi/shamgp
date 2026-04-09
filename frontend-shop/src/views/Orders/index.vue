@@ -5,12 +5,27 @@
       <div class="container">
         <h1 class="page-title">我的订单</h1>
         
-        <div v-if="orders.length > 0" class="orders-list">
+        <div class="order-tabs">
+          <button 
+            v-for="tab in orderTabs" 
+            :key="tab.value"
+            :class="['tab-btn', { active: activeTab === tab.value }]"
+            @click="activeTab = tab.value; loadOrders()"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+
+        <div v-if="loading" class="loading-state">
+          <p>加载中...</p>
+        </div>
+        
+        <div v-else-if="orders.length > 0" class="orders-list">
           <div v-for="order in orders" :key="order.id" class="order-card card">
             <div class="order-header">
               <div class="order-info">
-                <span class="order-no">订单号: {{ order.orderNo }}</span>
-                <span class="order-time">{{ formatDate(order.createdAt) }}</span>
+                <span class="order-no">订单号: {{ order.order_no }}</span>
+                <span class="order-time">{{ formatDate(order.created_at) }}</span>
               </div>
               <span class="order-status" :class="getStatusClass(order.status)">
                 {{ getStatusText(order.status) }}
@@ -19,7 +34,7 @@
             <div class="order-items">
               <div v-for="item in order.items" :key="item.id" class="order-item">
                 <div class="item-info">
-                  <h4 class="item-name">{{ item.productName }}</h4>
+                  <h4 class="item-name">{{ item.product_name }}</h4>
                   <span class="item-price">¥{{ item.price.toFixed(2) }} x {{ item.quantity }}</span>
                 </div>
               </div>
@@ -27,17 +42,26 @@
             <div class="order-footer">
               <span class="order-total">
                 共 {{ order.items?.length || 0 }} 件商品，合计: 
-                <span class="price">¥{{ order.totalAmount.toFixed(2) }}</span>
+                <span class="price">¥{{ order.total_amount.toFixed(2) }}</span>
               </span>
               <div class="order-actions">
-                <button v-if="order.status === 0" class="btn btn-default" @click="cancelOrder(order.id)">
+                <button v-if="order.status === 'pending'" class="btn btn-default" @click="cancelOrder(order.id)">
                   取消订单
                 </button>
-                <button v-if="order.status === 1" class="btn btn-primary">
+                <button v-if="order.status === 'paid'" class="btn btn-primary">
                   查看物流
+                </button>
+                <button v-if="order.status === 'shipped'" class="btn btn-primary">
+                  确认收货
                 </button>
               </div>
             </div>
+          </div>
+
+          <div class="pagination" v-if="total > pageSize">
+            <button class="btn" @click="changePage(page - 1)" :disabled="page === 1">上一页</button>
+            <span>{{ page }} / {{ Math.ceil(total / pageSize) }}</span>
+            <button class="btn" @click="changePage(page + 1)" :disabled="page >= Math.ceil(total / pageSize)">下一页</button>
           </div>
         </div>
         
@@ -56,68 +80,50 @@
 import { ref, onMounted } from 'vue'
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
-import type { Order, OrderItem } from '@/api/order'
+import { orderApi } from '@/api/order'
+import type { Order } from '@/api/order'
+import { useUserStore } from '@/stores/user'
 
+const userStore = useUserStore()
 const orders = ref<Order[]>([])
+const loading = ref(false)
+const total = ref(0)
+const page = ref(1)
+const pageSize = ref(10)
+const activeTab = ref('all')
+
+const orderTabs = [
+  { label: '全部', value: 'all' },
+  { label: '待支付', value: 'pending' },
+  { label: '已支付', value: 'paid' },
+  { label: '已发货', value: 'shipped' },
+  { label: '已完成', value: 'completed' }
+]
 
 onMounted(() => {
-  loadMockOrders()
+  if (userStore.isLoggedIn) {
+    loadOrders()
+  }
 })
 
-function loadMockOrders() {
-  const mockOrderItems: OrderItem[] = [
-    {
-      id: 1,
-      orderId: 1,
-      productId: 1,
-      productName: 'iPhone 15 Pro Max',
-      price: 9999,
-      quantity: 1,
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 2,
-      orderId: 1,
-      productId: 3,
-      productName: 'AirPods Pro 2',
-      price: 1899,
-      quantity: 2,
-      createdAt: new Date().toISOString()
+async function loadOrders() {
+  loading.value = true
+  try {
+    const status = activeTab.value === 'all' ? undefined : activeTab.value
+    const res: any = await orderApi.getOrders({
+      status,
+      page: page.value,
+      page_size: pageSize.value
+    })
+    if (res.code === 200) {
+      orders.value = res.data || []
+      total.value = res.total || 0
     }
-  ]
-
-  orders.value = [
-    {
-      id: 1,
-      orderNo: 'SH202401010001',
-      userId: 1,
-      totalAmount: 13797,
-      status: 1,
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-      updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      items: mockOrderItems
-    },
-    {
-      id: 2,
-      orderNo: 'SH202401020002',
-      userId: 1,
-      totalAmount: 14999,
-      status: 0,
-      createdAt: new Date(Date.now() - 172800000).toISOString(),
-      updatedAt: new Date(Date.now() - 172800000).toISOString(),
-      items: [
-        {
-          id: 3,
-          orderId: 2,
-          productId: 2,
-          productName: 'MacBook Pro 14英寸',
-          price: 14999,
-          quantity: 1,
-          createdAt: new Date(Date.now() - 172800000).toISOString()
-        }
-      ]
-    }
-  ]
+  } catch (e) {
+    console.error('加载订单失败', e)
+  } finally {
+    loading.value = false
+  }
 }
 
 function formatDate(dateString: string) {
@@ -125,35 +131,45 @@ function formatDate(dateString: string) {
   return date.toLocaleString('zh-CN')
 }
 
-function getStatusText(status: number) {
-  const statusMap: Record<number, string> = {
-    0: '待支付',
-    1: '已支付',
-    2: '已发货',
-    3: '已完成',
-    4: '已取消'
+function getStatusText(status: string) {
+  const statusMap: Record<string, string> = {
+    'pending': '待支付',
+    'paid': '已支付',
+    'shipped': '已发货',
+    'completed': '已完成',
+    'cancelled': '已取消'
   }
   return statusMap[status] || '未知'
 }
 
-function getStatusClass(status: number) {
-  const classMap: Record<number, string> = {
-    0: 'pending',
-    1: 'paid',
-    2: 'shipped',
-    3: 'completed',
-    4: 'cancelled'
+function getStatusClass(status: string) {
+  const classMap: Record<string, string> = {
+    'pending': 'pending',
+    'paid': 'paid',
+    'shipped': 'shipped',
+    'completed': 'completed',
+    'cancelled': 'cancelled'
   }
   return classMap[status] || ''
 }
 
-function cancelOrder(orderId: number) {
+async function cancelOrder(orderId: number) {
   if (confirm('确定要取消该订单吗？')) {
-    const order = orders.value.find(o => o.id === orderId)
-    if (order) {
-      order.status = 4
+    try {
+      await orderApi.cancelOrder(orderId, '用户主动取消')
+      loadOrders()
+    } catch (e) {
+      console.error('取消订单失败', e)
     }
   }
+}
+
+function changePage(newPage: number) {
+  if (newPage < 1 || newPage > Math.ceil(total.value / pageSize.value)) {
+    return
+  }
+  page.value = newPage
+  loadOrders()
 }
 </script>
 
@@ -173,6 +189,40 @@ function cancelOrder(orderId: number) {
   font-size: 28px;
   color: #333;
   margin-bottom: 30px;
+}
+
+.order-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.tab-btn {
+  padding: 12px 24px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.tab-btn:hover {
+  color: #ff6b6b;
+}
+
+.tab-btn.active {
+  color: #ff6b6b;
+  border-bottom-color: #ff6b6b;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 80px 0;
+  color: #666;
+  font-size: 16px;
 }
 
 .orders-list {
@@ -286,6 +336,38 @@ function cancelOrder(orderId: number) {
 .order-actions {
   display: flex;
   gap: 12px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 40px;
+  gap: 16px;
+}
+
+.pagination .btn {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.pagination .btn:hover:not(:disabled) {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.pagination .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  font-size: 14px;
+  color: #666;
 }
 
 .empty-orders {

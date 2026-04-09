@@ -27,6 +27,44 @@ class UserService:
         return result.scalar_one_or_none()
     
     @staticmethod
+    async def get_by_email(db: AsyncSession, email: str) -> Optional[User]:
+        result = await db.execute(
+            select(User).where(User.email == email, User.is_deleted == False)
+        )
+        return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def authenticate(db: AsyncSession, username: str, password: str) -> Optional[User]:
+        user = await UserService.get_by_username(db, username)
+        if not user:
+            return None
+        if not verify_password(password, user.password):
+            return None
+        return user
+    
+    @staticmethod
+    async def get_multi_paginated(db: AsyncSession, page: int = 1, page_size: int = 10) -> tuple[List[User], int]:
+        offset = (page - 1) * page_size
+        
+        # 获取总数
+        count_result = await db.execute(
+            select(func.count(User.id)).where(User.is_deleted == False)
+        )
+        total = count_result.scalar()
+        
+        # 获取分页数据
+        result = await db.execute(
+            select(User)
+            .options(selectinload(User.roles))
+            .where(User.is_deleted == False)
+            .offset(offset)
+            .limit(page_size)
+        )
+        items = list(result.scalars().all())
+        
+        return items, total
+    
+    @staticmethod
     async def get_multi(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[User]:
         result = await db.execute(
             select(User)
@@ -45,18 +83,34 @@ class UserService:
         return result.scalar()
     
     @staticmethod
-    async def create(db: AsyncSession, obj_in: UserCreate) -> User:
-        existing = await UserService.get_by_username(db, obj_in.username)
+    async def create(db: AsyncSession, obj_in: UserCreate | dict) -> User:
+        # 处理字典类型的输入
+        if isinstance(obj_in, dict):
+            username = obj_in.get('username')
+            password = obj_in.get('password')
+            email = obj_in.get('email')
+            phone = obj_in.get('phone')
+            nickname = obj_in.get('nickname')
+            avatar = obj_in.get('avatar')
+        else:
+            username = obj_in.username
+            password = obj_in.password
+            email = obj_in.email
+            phone = obj_in.phone
+            nickname = obj_in.nickname
+            avatar = obj_in.avatar
+        
+        existing = await UserService.get_by_username(db, username)
         if existing:
             raise ValidationError("Username already registered")
         
         db_obj = User(
-            username=obj_in.username,
-            password=get_password_hash(obj_in.password),
-            email=obj_in.email,
-            phone=obj_in.phone,
-            nickname=obj_in.nickname,
-            avatar=obj_in.avatar
+            username=username,
+            password=get_password_hash(password),
+            email=email,
+            phone=phone,
+            nickname=nickname,
+            avatar=avatar
         )
         db.add(db_obj)
         await db.commit()
@@ -64,8 +118,13 @@ class UserService:
         return db_obj
     
     @staticmethod
-    async def update(db: AsyncSession, db_obj: User, obj_in: UserUpdate) -> User:
-        update_data = obj_in.model_dump(exclude_unset=True)
+    async def update(db: AsyncSession, db_obj: User, obj_in: UserUpdate | dict) -> User:
+        # 处理字典类型的输入
+        if isinstance(obj_in, dict):
+            update_data = obj_in
+        else:
+            update_data = obj_in.model_dump(exclude_unset=True)
+        
         for field, value in update_data.items():
             setattr(db_obj, field, value)
         db.add(db_obj)
@@ -94,3 +153,6 @@ class UserService:
         db.add(user)
         await db.commit()
         return user
+
+
+user_service = UserService()

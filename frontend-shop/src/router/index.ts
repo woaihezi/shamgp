@@ -66,6 +66,12 @@ const routes: RouteRecordRaw[] = [
     name: 'OrderDetailLegacy',
     component: () => import('@/views/order/OrderDetail.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/addresses',
+    name: 'Addresses',
+    component: () => import('@/views/Addresses/index.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

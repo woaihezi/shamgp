@@ -70,4 +70,13 @@ export interface Banner {
 export const bannerApi = {
   getBanners: (params?: { page?: number; page_size?: number; platform?: number }) =>
     request.get<ApiResponse<PageResult<Banner>>>('/banners', { params }),
+  
+  createBanner: (data: Partial<Banner>) =>
+    request.post<ApiResponse<{ id: number }>>('/banners', data),
+  
+  updateBanner: (id: number, data: Partial<Banner>) =>
+    request.put<ApiResponse<any>>(`/banners/${id}`, data),
+  
+  deleteBanner: (id: number) =>
+    request.delete<ApiResponse<any>>(`/banners/${id}`),
 }

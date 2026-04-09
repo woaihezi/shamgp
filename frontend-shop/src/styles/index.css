@@ -59,3 +59,114 @@ a {
   color: #ff6b6b;
   font-weight: bold;
 }
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
+  
+  h1 {
+    font-size: 24px !important;
+  }
+  
+  h2 {
+    font-size: 20px !important;
+  }
+  
+  .btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  /* 商品列表页面 */
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+    gap: 16px !important;
+  }
+  
+  /* 个人中心页面 */
+  .profile-content {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  /* 订单页面 */
+  .order-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .order-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .order-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  /* 地址管理页面 */
+  .addresses-list {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* 搜索页面 */
+  .search-input {
+    width: 200px !important;
+  }
+  
+  /* 购物车页面 */
+  .cart-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  /* 结账页面 */
+  .checkout-steps {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .checkout-step {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 10px;
+  }
+  
+  h1 {
+    font-size: 20px !important;
+  }
+  
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+  }
+  
+  .search-input {
+    width: 150px !important;
+  }
+  
+  .btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .order-item {
+    padding: 8px;
+  }
+  
+  .address-card {
+    padding: 16px;
+  }
+}

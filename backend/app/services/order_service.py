@@ -103,13 +103,28 @@ class OrderService:
                 await self.db.rollback()
                 raise ValueError(f"SKU {sku_id} 库存不足：{deduct_result['error']}")
 
-        # Eager load items before returning
+        # Eager load items and status logs before returning
+        from ..models.order_status_log import OrderStatusLog
         result = await self.db.execute(
             select(Order)
             .where(Order.id == order.id)
-            .options(selectinload(Order.items))
+            .options(
+                selectinload(Order.items),
+                selectinload(Order.status_logs).order_by(OrderStatusLog.created_at.desc())
+            )
         )
         order = result.scalar_one()
+
+        # 记录初始状态变更日志
+        await self.add_status_log(
+            self.db, 
+            order_id=order.id, 
+            new_status=OrderStatus.PENDING_PAYMENT, 
+            old_status=None, 
+            operator_type="system",
+            operator_id=None,
+            remark="订单创建"
+        )
 
         await self.db.commit()
         return order
@@ -137,19 +152,27 @@ class OrderService:
         return orders, total
 
     async def get_order(self, order_id: int, user_id: Optional[int] = None) -> Optional[Order]:
+        from ..models.order_status_log import OrderStatusLog
         query = select(Order).where(Order.id == order_id, Order.is_deleted == False)
         if user_id:
             query = query.where(Order.user_id == user_id)
-        query = query.options(selectinload(Order.items))
+        query = query.options(
+            selectinload(Order.items),
+            selectinload(Order.status_logs).order_by(OrderStatusLog.created_at.desc())
+        )
         
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_order_by_no(self, order_no: str, user_id: Optional[int] = None) -> Optional[Order]:
+        from ..models.order_status_log import OrderStatusLog
         query = select(Order).where(Order.order_no == order_no, Order.is_deleted == False)
         if user_id:
             query = query.where(Order.user_id == user_id)
-        query = query.options(selectinload(Order.items))
+        query = query.options(
+            selectinload(Order.items),
+            selectinload(Order.status_logs).order_by(OrderStatusLog.created_at.desc())
+        )
         
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
@@ -159,6 +182,7 @@ class OrderService:
         if not order:
             return None
 
+        old_status = order.status
         order.status = status
         
         if status == OrderStatus.PAID:
@@ -175,6 +199,17 @@ class OrderService:
         elif status == OrderStatus.REFUNDED:
             order.pay_status = PayStatus.REFUNDED
             order.refund_time = datetime.now()
+
+        # 记录状态变更日志
+        await self.add_status_log(
+            self.db, 
+            order_id=order_id, 
+            new_status=status, 
+            old_status=old_status, 
+            operator_type="admin" if user_id is None else "user",
+            operator_id=user_id,
+            remark=f"状态变更: {old_status} → {status}"
+        )
 
         await self.db.commit()
         await self.db.refresh(order)
@@ -198,6 +233,8 @@ class OrderService:
         if not order or order.status not in [OrderStatus.PENDING_PAYMENT]:
             return None
 
+        old_status = order.status
+        
         for item in order.items:
             result = await self.db.execute(select(Product).where(Product.id == item.product_id))
             product = result.scalar_one_or_none()
@@ -217,6 +254,17 @@ class OrderService:
         order.status = OrderStatus.CANCELED
         order.cancel_time = datetime.now()
         order.cancel_reason = cancel_reason
+
+        # 记录状态变更日志
+        await self.add_status_log(
+            self.db, 
+            order_id=order_id, 
+            new_status=OrderStatus.CANCELED, 
+            old_status=old_status, 
+            operator_type="user",
+            operator_id=user_id,
+            remark=f"订单取消: {cancel_reason}"
+        )
 
         await self.db.commit()
         await self.db.refresh(order)

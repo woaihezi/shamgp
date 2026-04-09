@@ -7,7 +7,7 @@
           <div class="stat-icon orders-icon">
             <el-icon :size="28"><ShoppingCart /></el-icon>
           </div>
-          <el-statistic title="今日订单数" :value="stats.todayOrders" />
+          <el-statistic title="今日订单数" :value="stats.today_orders" />
         </el-card>
       </el-col>
       <el-col :span="6">
@@ -15,7 +15,7 @@
           <div class="stat-icon sales-icon">
             <el-icon :size="28"><Money /></el-icon>
           </div>
-          <el-statistic title="本月销售额" prefix="¥" :value="stats.monthSales" :precision="2" />
+          <el-statistic title="今日销售额" prefix="¥" :value="stats.today_sales" :precision="2" />
         </el-card>
       </el-col>
       <el-col :span="6">
@@ -23,7 +23,7 @@
           <div class="stat-icon users-icon">
             <el-icon :size="28"><User /></el-icon>
           </div>
-          <el-statistic title="用户总数" :value="stats.totalUsers" />
+          <el-statistic title="用户总数" :value="stats.total_users" />
         </el-card>
       </el-col>
       <el-col :span="6">
@@ -31,7 +31,7 @@
           <div class="stat-icon pending-icon">
             <el-icon :size="28"><Clock /></el-icon>
           </div>
-          <el-statistic title="待处理订单" :value="stats.pendingOrders" />
+          <el-statistic title="在售商品" :value="stats.on_sale_products" />
         </el-card>
       </el-col>
     </el-row>
@@ -51,12 +51,12 @@
           </template>
           <el-table :data="recentOrders" v-loading="tableLoading" style="width: 100%">
             <el-table-column prop="order_no" label="订单号" width="200" />
-            <el-table-column prop="user_id" label="用户" width="120">
-              <template #default="{ row }">用户 #{{ row.user_id }}</template>
+            <el-table-column prop="id" label="用户" width="120">
+              <template #default="{ row }">用户 #{{ row.id }}</template>
             </el-table-column>
             <el-table-column label="金额" width="120">
               <template #default="{ row }">
-                <span class="amount">¥{{ row.pay_amount?.toFixed(2) || row.total_amount?.toFixed(2) }}</span>
+                <span class="amount">¥{{ row.total_amount?.toFixed(2) }}</span>
               </template>
             </el-table-column>
             <el-table-column label="状态" width="100">
@@ -65,7 +65,9 @@
               </template>
             </el-table-column>
             <el-table-column label="时间" min-width="180">
-              <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+              <template #default="{ row }">
+                {{ formatTime(row.created_at || new Date().toISOString()) }}
+              </template>
             </el-table-column>
           </el-table>
         </el-card>
@@ -82,10 +84,14 @@ import request from '@/api/request'
 
 // 统计数据
 const stats = ref({
-  todayOrders: 128,
-  monthSales: 45230,
-  totalUsers: 1203,
-  pendingOrders: 23
+  total_users: 0,
+  today_users: 0,
+  total_orders: 0,
+  today_orders: 0,
+  total_products: 0,
+  on_sale_products: 0,
+  total_sales: 0,
+  today_sales: 0
 })
 
 // 最近订单
@@ -99,7 +105,7 @@ const getStatusText = (status: string) => {
     paid: '已付款',
     shipped: '已发货',
     completed: '已完成',
-    canceled: '已取消'
+    cancelled: '已取消'
   }
   return map[status] || status
 }
@@ -110,7 +116,7 @@ const getStatusType = (status: string) => {
     paid: 'success',
     shipped: 'info',
     completed: 'success',
-    canceled: 'info'
+    cancelled: 'info'
   }
   return map[status] || ''
 }
@@ -138,12 +144,10 @@ const loadStats = async () => {
 const loadRecentOrders = async () => {
   try {
     tableLoading.value = true
-    const res: any = await request.get('/orders/admin/', {
-      params: { page: 1, page_size: 5 }
-    })
+    const res: any = await request.get('/dashboard/order-stats')
 
-    if (res.code === 200) {
-      recentOrders.value = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+    if (res.code === 200 && res.data && res.data.recent_orders) {
+      recentOrders.value = res.data.recent_orders
     }
   } catch (err) {
     console.error('Failed to load recent orders:', err)
@@ -152,14 +156,6 @@ const loadRecentOrders = async () => {
     tableLoading.value = false
   }
 }
-
-const getMockRecentOrders = () => [
-  { order_no: 'ORD20260331001', user_id: 1001, pay_amount: 299.00, status: 'paid', created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-  { order_no: 'ORD20260331002', user_id: 1002, pay_amount: 1280.50, status: 'shipped', created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-  { order_no: 'ORD20260331003', user_id: 1003, pay_amount: 59.00, status: 'pending_payment', created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString() },
-  { order_no: 'ORD20260331004', user_id: 1004, pay_amount: 899.00, status: 'completed', created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString() },
-  { order_no: 'ORD20260331005', user_id: 1005, pay_amount: 450.00, status: 'paid', created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString() }
-]
 
 onMounted(() => {
   loadStats()

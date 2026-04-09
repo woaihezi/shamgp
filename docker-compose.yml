@@ -30,6 +30,60 @@ services:
     networks:
       - shop-network
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shop-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DB_TYPE=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=shop_db
+      - SECRET_KEY=your-secret-key-here-change-in-production
+    depends_on:
+      - mysql
+    networks:
+      - shop-network
+
+  frontend-admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+    container_name: shop-frontend-admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend-admin:/app
+    environment:
+      - VITE_API_BASE_URL=http://backend:8000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - shop-network
+
+  frontend-shop:
+    build:
+      context: ./frontend-shop
+      dockerfile: Dockerfile
+    container_name: shop-frontend-shop
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend-shop:/app
+    environment:
+      - VITE_API_BASE_URL=http://backend:8000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - shop-network
+
 volumes:
   mysql-data:
   postgres-data:
