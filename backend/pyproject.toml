@@ -1,0 +1,24 @@
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.py$'
+exclude = '''(
+    /(\n        \.git
+        | \.venv
+        | env
+        | build
+        | dist
+    )/
+)'''
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
