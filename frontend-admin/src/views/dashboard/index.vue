@@ -7,7 +7,7 @@
           <div class="stat-icon orders-icon">
             <el-icon :size="28"><ShoppingCart /></el-icon>
           </div>
-          <el-statistic title="今日订单数" :value="stats.todayOrders" />
+          <el-statistic title="今日订单数" :value="stats.today_orders" />
         </el-card>
       </el-col>
       <el-col :span="6">
@@ -15,7 +15,7 @@
           <div class="stat-icon sales-icon">
             <el-icon :size="28"><Money /></el-icon>
           </div>
-          <el-statistic title="本月销售额" prefix="¥" :value="stats.monthSales" :precision="2" />
+          <el-statistic title="本月销售额" prefix="¥" :value="stats.total_sales" :precision="2" />
         </el-card>
       </el-col>
       <el-col :span="6">
@@ -23,7 +23,7 @@
           <div class="stat-icon users-icon">
             <el-icon :size="28"><User /></el-icon>
           </div>
-          <el-statistic title="用户总数" :value="stats.totalUsers" />
+          <el-statistic title="用户总数" :value="stats.total_users" />
         </el-card>
       </el-col>
       <el-col :span="6">
@@ -31,7 +31,7 @@
           <div class="stat-icon pending-icon">
             <el-icon :size="28"><Clock /></el-icon>
           </div>
-          <el-statistic title="待处理订单" :value="stats.pendingOrders" />
+          <el-statistic title="待处理订单" :value="(stats.pending_payment || 0) + (stats.shipped || 0)" />
         </el-card>
       </el-col>
     </el-row>
@@ -80,12 +80,14 @@ import { ElMessage } from 'element-plus'
 import { ShoppingCart, Money, User, Clock } from '@element-plus/icons-vue'
 import request from '@/api/request'
 
-// 统计数据
+// 统计数据（字段名与后端 snake_case 对齐）
 const stats = ref({
-  todayOrders: 128,
-  monthSales: 45230,
-  totalUsers: 1203,
-  pendingOrders: 23
+  today_orders: 0,
+  total_sales: 0,
+  total_users: 0,
+  pending_payment: 0,
+  paid: 0,
+  shipped: 0,
 })
 
 // 最近订单
@@ -126,11 +128,24 @@ const loadStats = async () => {
     const res: any = await request.get('/dashboard/stats')
 
     if (res.code === 200 && res.data) {
-      stats.value = res.data
+      // 合并数据，保留 order-stats 带来的额外字段
+      stats.value = { ...stats.value, ...res.data }
     }
   } catch (err) {
     console.error('Failed to load stats:', err)
     loadFailed.value = true
+  }
+}
+
+// 获取订单状态统计（补充 pending_payment 等字段）
+const loadOrderStats = async () => {
+  try {
+    const res: any = await request.get('/dashboard/order-stats')
+    if (res.code === 200 && res.data?.stats) {
+      stats.value = { ...stats.value, ...res.data.stats }
+    }
+  } catch (err) {
+    console.error('Failed to load order stats:', err)
   }
 }
 
@@ -163,6 +178,7 @@ const getMockRecentOrders = () => [
 
 onMounted(() => {
   loadStats()
+  loadOrderStats()
   loadRecentOrders()
 })
 </script>

@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || "";
+const baseURL = '/api/v1';
 
 const service: AxiosInstance = axios.create({
   baseURL,
@@ -9,7 +9,7 @@ const service: AxiosInstance = axios.create({
 
 service.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
